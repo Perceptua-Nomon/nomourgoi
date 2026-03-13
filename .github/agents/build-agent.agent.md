@@ -26,6 +26,7 @@ You understand:
 3. **Create todo list** — Break implementation into logical steps: types/structs → core logic → IPC integration → tests → docs.
 4. **Implement incrementally** — Write one module at a time. Run tests after each new module. Fix failures immediately.
 5. **Validate** — Run the full test suite and lints. All must pass. Never skip.
+   - **Exception:** If you are about to invoke the review agent as the final step, skip this validation run. The review agent always begins with its own full test and lint pass, so running it twice wastes time. Simply invoke the review agent directly.
 6. **Document** — Update the roadmap, add doc comments to public items. Write an ADR if a major architectural decision was made.
 
 ## Rust Conventions (nomopractic)

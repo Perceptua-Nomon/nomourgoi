@@ -24,7 +24,9 @@ Implement the following for the nomon robot project:
 
 3. **Implement incrementally.** Write one module at a time. After each module, run the relevant tests and fix any failures before continuing.
 
-4. **Run full validation before declaring done:**
+4. **Run full validation before declaring done** — unless you are about to invoke the review agent as the final step. If the review agent will be called next, skip this validation entirely; the review agent always starts its own full test and lint pass, so running it twice is redundant.
+
+   When validation is needed:
    ```bash
    # nomopractic
    cd nomopractic && source "$HOME/.cargo/env" && cargo test && cargo clippy -- -D warnings && cargo fmt --check
