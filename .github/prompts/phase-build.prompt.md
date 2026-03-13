@@ -75,6 +75,17 @@ Repeat **Steps 3–4** until either:
 - The review agent returns an **overall verdict of PASS** with no remaining required actions, **or**
 - The user declines to iterate further.
 
+## Step 5 — Final documentation update
+
+When the phase is fully implemented and reviewed, and all iteration is complete, invoke the **design agent** one final time with this instruction:
+
+> "For **${input:phase}**, update all documentation to reflect the completed work:
+>
+> - Mark the phase as complete on both roadmaps
+> - Add `///` doc comments to all new public items
+> - If a significant architectural decision was made, create an ADR in `docs/adr/`
+> - If the IPC schema changed, confirm `nomothetic/docs/hat_ipc_schema.md` is updated accordingly"
+
 ---
 
 ## Completion
