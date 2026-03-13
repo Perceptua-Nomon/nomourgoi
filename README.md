@@ -1,0 +1,2 @@
+# nomourgoi
+Nomon AI workers
