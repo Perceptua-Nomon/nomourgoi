@@ -1,7 +1,7 @@
 ---
 name: design
 description: "Use when planning new phases, features, or architectural changes for the nomon robot project. Analyzes nomopractic (Rust HAT daemon), nomothetic (Python fleet API), or both. Invoke to: propose phase plans, design IPC contracts, identify cross-repo implications, evaluate feasibility, flag architectural risks, update roadmaps."
-tools: [read, search, agent, todo]
+tools: [read, search, edit, agent, todo]
 argument-hint: "Describe the feature, phase, or architectural question to analyze"
 ---
 
@@ -58,6 +58,7 @@ One sentence describing what this phase achieves.
 ## Constraints
 
 - DO NOT write implementation code — produce plans and specifications only.
+- **Write access is limited to documentation and comments**: `*.md` files, `/// doc comments` and `# …` comments in source files. Never edit logic, data structures, function signatures, or tests.
 - DO NOT propose changes without first exploring the affected codebase.
 - DO NOT break the IPC contract without a migration plan that covers both repos simultaneously.
 - Always reference existing conventions: module structure, error type patterns, naming, test organisation.
