@@ -109,5 +109,5 @@ When adding a new IPC method:
 - IPC schema: `nomothetic/docs/hat_ipc_schema.md`
 - HAT register constants: `nomopractic/src/hat/` modules
 - Config defaults: `nomopractic/config.toml`, `nomothetic/config.toml`
-- Security checklist: `nomourgoi/docs/security-checklist.md`
-- Coding standards: `nomourgoi/docs/coding-standards.md`
+- Security checklist: `docs/security-checklist.md`
+- Coding standards: `docs/coding-standards.md`

@@ -51,7 +51,7 @@ The philosophy underlying nomon is **thoughtful engineering for accessibility**:
 
 ## The Three Agents
 
-### 1. Design Agent (`.design-agent.md`)
+### 1. Design Agent (`.github/agents/design-agent.agent.md`)
 
 **Role:** Strategic planning and architectural guidance.
 
@@ -72,7 +72,7 @@ The philosophy underlying nomon is **thoughtful engineering for accessibility**:
 @design Analyze feasibility of adding OLED display support
 ```
 
-### 2. Build Agent (`.build-agent.md`)
+### 2. Build Agent (`.github/agents/build-agent.agent.md`)
 
 **Role:** Implementation with exceptional quality and sustainability.
 
@@ -94,7 +94,7 @@ The philosophy underlying nomon is **thoughtful engineering for accessibility**:
 @build Refactor motor control to reduce code duplication
 ```
 
-### 3. Review Agent (`.review-agent.md`)
+### 3. Review Agent (`.github/agents/review-agent.agent.md`)
 
 **Role:** Quality assurance and risk identification.
 
@@ -302,13 +302,13 @@ When updating either schema, update BOTH files and run full integration tests.
 
 - **Purpose:** Design, Build, Review agents; shared context; development standards
 - **Contents:**
-  - `.copilot-instructions.md` (this file)
-  - `.design-agent.md` + `.design-agent.prompt.md`
-  - `.build-agent.md` + `.build-agent.prompt.md`
-  - `.review-agent.md` + `.review-agent.prompt.md`
-  - `.project-context.md` (consolidated architecture)
-  - `.coding-standards.md` (unified style guide)
-  - `.security-checklist.md` (risk inventory)
+  - `.github/.copilot-instructions.md` (this file)
+  - `.github/agents/design-agent.agent.md` + `.github/prompts/design-agent.prompt.md`
+  - `.github/agents/build-agent.agent.md` + `.github/prompts/build-agent.prompt.md`
+  - `.github/agents/review-agent.agent.md` + `.github/prompts/review-agent.prompt.md`
+  - `docs/project-context.md` (consolidated architecture)
+  - `docs/coding-standards.md` (unified style guide)
+  - `docs/security-checklist.md` (risk inventory)
 
 ---
 
@@ -378,7 +378,7 @@ pytest
 
 ### Cross-Repo Alignment
 
-- IPC schema consistency: Compare Rust `src/ipc/schema.rs` with Python `nomothetic/hat.py`
-- Hardware constants: Compare Rust `src/hat/gpio.rs` with Python `nomothetic/hat.py`
+- IPC schema consistency: Compare Rust `src/ipc/schema.rs` with Python `nomothetic/src/nomothetic/hat.py`
+- Hardware constants: Compare Rust `src/hat/gpio.rs` with Python `nomothetic/src/nomothetic/hat.py`
 - Error codes: Both sides recognize all error codes
 - Test coverage: Integration tests validate round-trip serialization

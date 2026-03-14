@@ -36,7 +36,7 @@ Review the following for the nomon robot project:
    - Read `nomothetic/docs/hat_ipc_schema.md` and `nomothetic/src/nomothetic/hat.py`
    - Confirm they all agree. Report any discrepancy as a HIGH finding.
 
-5. **Apply the security checklist** (`nomourgoi/docs/security-checklist.md`):
+5. **Apply the security checklist** (`docs/security-checklist.md`):
    - Rust: no unsafe without SAFETY comment, bounded channels, no secrets
    - Python: no eval/exec on input, no hardcoded credentials, conditional imports
    - IPC: all inputs validated before hardware access

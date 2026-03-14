@@ -117,5 +117,5 @@ Key actions required: [bulleted list or "None"]
 ## Key References
 
 - IPC schema: `nomothetic/docs/hat_ipc_schema.md`
-- Security checklist: `nomourgoi/docs/security-checklist.md`
-- Coding standards: `nomourgoi/docs/coding-standards.md`
+- Security checklist: `docs/security-checklist.md`
+- Coding standards: `docs/coding-standards.md`
