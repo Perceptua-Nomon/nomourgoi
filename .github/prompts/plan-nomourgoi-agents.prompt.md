@@ -1,0 +1,384 @@
+---
+agent: agent
+description: "Foundational plan for implementing Design, Build, and Review agents across the nomopractic, nomothetic, and nomourgoi repositories."
+---
+
+# nomourgoi — Project-Level Copilot Instructions
+
+## Project Identity & Mission
+
+**nomon** is a codebase for a fleet of **intelligent, semi-autonomous robots** that provide utility and convenience to working- and middle-class people.
+
+**nomourgoi** hosts the project-level development infrastructure—specialized AI agents and shared knowledge that coordinate engineering across three tightly integrated code repositories:
+
+1. **nomopractic** — Rust HAT hardware daemon (low-latency GPIO/I2C drivers)
+2. **nomothetic** — Python fleet package (REST API, camera, telemetry, HAT client)
+3. **nomourgoi** — Agents, prompts, shared context, and development standards
+
+The philosophy underlying nomon is **thoughtful engineering for accessibility**: Every line of code should serve real human needs with reliability and clarity, not complexity. Quality and sustainability are non-negotiable.
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│            Development Workflow (nomourgoi)             │
+│  ┌───────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │ Design Agent  │──│ Build Agent  │──│Review Agent  │ │
+│  └───────────────┘  └──────────────┘  └──────────────┘ │
+│        ↓                  ↓                    ↓        │
+│   Phase Plans      Implementation      Quality Gates    │
+│   Architecture     Code + Tests        Security/Perf    │
+│   Roadmaps         Documentation       Consistency      │
+└─────────────────────────────────────────────────────────┘
+                          ↓ ↑
+┌─────────────────────────────────────────────────────────┐
+│                    Code Repositories                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ nomopractic  │  │ nomothetic   │  │ nomourgoi    │  │
+│  │ (Rust HAT)   │  │ (Python API) │  │ (Agents)     │  │
+│  │              │  │              │  │              │  │
+│  │ IPC handler  │  │ REST API     │  │ Agent defs   │  │
+│  │ HAT drivers  │  │ Camera ctrl  │  │ Prompts      │  │
+│  │ Motor/servo  │  │ Telemetry    │  │ Context      │  │
+│  │ GPIO control │  │ HAT client   │  │ Standards    │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## The Three Agents
+
+### 1. Design Agent (`.github/agents/design-agent.agent.md`)
+
+**Role:** Strategic planning and architectural guidance.
+
+**Responsibilities:**
+- Analyze new feature requests against existing architecture
+- Understand codebases deeply (Rust + Python patterns, IPC contracts, hardware constraints)
+- Propose new development phases with clear steps, dependencies, and verification criteria
+- Identify cross-repo implications (e.g., Rust HAT change → Python API change → mobile client impact)
+- Suggest architectural improvements and roadmap expansions
+- Flag risks and architectural antibodies early
+
+**Tool Access:** Read-only across all repos + `Explore` subagent for codebase discovery
+
+**Invocation:** When starting a new feature, phase, or major refactor
+```
+@design Propose a plan for Phase 9 (remote firmware updates)
+@design Design the authentication layer for remote access
+@design Analyze feasibility of adding OLED display support
+```
+
+### 2. Build Agent (`.github/agents/build-agent.agent.md`)
+
+**Role:** Implementation with exceptional quality and sustainability.
+
+**Responsibilities:**
+- Execute detailed plans created by the Design agent
+- Write idiomatic, maintainable code adhering to project style (Rust: clippy strict; Python: black/ruff)
+- Create comprehensive tests (unit + integration) with meaningful assertions
+- Write clear documentation (docstrings, ADRs, roadmap updates)
+- Prioritize code reusability and shared utilities to minimize duplication
+- Ensure cross-repo consistency (IPC schema, API contracts, documentation)
+- Validate all checks pass before completion (tests, lints, format)
+
+**Tool Access:** Full (read/write, terminal, test runners, diagnostics)
+
+**Invocation:** When you have a detailed plan and want implementation
+```
+@build Implement Phase 9 according to the plan in /PHASE_9_PLAN.md
+@build Add OLED display support as designed in docs/
+@build Refactor motor control to reduce code duplication
+```
+
+### 3. Review Agent (`.github/agents/review-agent.agent.md`)
+
+**Role:** Quality assurance and risk identification.
+
+**Responsibilities:**
+- Run and interpret test suites (`cargo test`, `pytest`)
+- Run linters and formatters (`clippy`, `ruff`, `black`, `cargo fmt`)
+- Review code for:
+  - **Consistency:** Does it follow module guidelines? Are naming conventions applied?
+  - **Test coverage:** Are edge cases tested? Do tests validate the plan?
+  - **Documentation:** Are comments clear? Does the implementation match the documentation?
+  - **Security:** Input validation, unsafe blocks, secrets, IPC validation, injection risks
+  - **Performance:** Lock contention, unnecessary allocations, blocking I/O, unbounded loops
+  - **Cross-repo coherence:** Do Python client and Rust API match? Is IPC schema consistent?
+- Suggest or implement fixes for identified issues
+
+**Tool Access:** Test/lint runners + read-only for code analysis
+
+**Invocation:** During or after implementation to validate quality
+```
+@review Review the new motor control code for security and performance
+@review Validate Phase 9 implementation against the original plan
+@review Check cross-repo consistency after IPC schema changes
+```
+
+---
+
+## Key Principles
+
+### Quality & Reliability
+
+- **No shortcuts for deadlines.** Every feature is shipped with full tests, documentation, and architectural alignment.
+- **Mocked hardware by default.** Tests run on dev machines without physical robots; integration tests validate real device behavior.
+- **Security by design.** Input validation at all boundaries. No secrets in code. Rust `unsafe` only with documented invariants.
+- **Cross-platform compatibility.** Code runs on x86_64 Linux for development; targets aarch64 for deployment.
+
+### Code Organization
+
+| Repository | Language | Role |
+|------------|----------|------|
+| **nomopractic** | Rust | Low-latency hardware drivers; all HAT register logic lives here |
+| **nomothetic** | Python | REST API, camera control, telemetry; NO hardware knowledge (delegates to Rust via IPC) |
+| **nomourgoi** | Markdown/YAML | Development agents, prompts, shared knowledge, standards |
+
+### Error Handling Patterns
+
+**Rust:** Use `thiserror` for custom error types. Propagate with `?`. Implement `Display` for user-facing messages.
+```rust
+#[derive(thiserror::Error)]
+#[error("servo channel {channel} out of range (0–11)")]
+pub struct InvalidChannel { pub channel: u8 }
+```
+
+**Python:** Use `dataclass` exceptions with clear messages. Validate inputs early.
+```python
+class ServoError(Exception):
+    def __init__(self, channel: int, reason: str):
+        self.channel = channel
+        self.reason = reason
+        super().__init__(f"Servo {channel}: {reason}")
+```
+
+### Testing Conventions
+
+**Rust:**
+- Trait-based I2C mock for unit tests (no hardware)
+- Integration tests in `tests/` directory validating IPC protocol
+- `cargo test -- --test-threads=1` for tests that share mocks
+
+**Python:**
+- `unittest.mock` for picamera2, spidev, hardware dependencies
+- Fixture-based test setup (pytest)
+- Integration tests validating REST API + IPC client together
+
+### Documentation Standards
+
+- **Module-level comments:** Explain what the module does and why; reference hardware datasheets or IPC schema
+- **Function docstrings:** Explain intent, parameters, return values, error cases
+- **Architecture Decision Records (ADRs):** Major decisions (e.g., "Why Rust for HAT drivers?") → `docs/adr/`
+- **Roadmap updates:** Mark phases as complete; add lessons learned
+
+---
+
+## Module Map
+
+### nomopractic (Rust)
+
+| Path | Responsibility |
+|------|---|
+| `src/ipc/mod.rs` | Unix socket listener, per-client tasks |
+| `src/ipc/schema.rs` | Request/Response types (NDJSON framed) |
+| `src/ipc/handler.rs` | Method dispatch to HAT drivers |
+| `src/hat/i2c.rs` | I2C read/write (rppal), traits for mock |
+| `src/hat/servo.rs` | PWM servo control + TTL lease watchdog |
+| `src/hat/motor.rs` | DC motor speed control (PWM + GPIO) |
+| `src/hat/battery.rs` | ADC battery voltage reading |
+| `src/hat/gpio.rs` | Named GPIO pins (D4, D5, MCU reset, SW, LED) |
+| `src/hat/ultrasonic.rs` | HC-SR04 distance sensor (GPIO timing) |
+
+### nomothetic (Python)
+
+| Module | Purpose |
+|--------|---------|
+| `nomothetic.camera` | OV5647 capture (picamera2) |
+| `nomothetic.streaming` | MJPEG Flask server (local LAN) |
+| `nomothetic.api` | FastAPI HTTPS REST (primary control) |
+| `nomothetic.telemetry` | MQTT background publisher |
+| `nomothetic.hat` | IPC client for nomopractic daemon |
+| `nomothetic.audio` | USB microphone + HifiBerry DAC |
+
+---
+
+## IPC Contract (nomopractic ↔ nomothetic)
+
+**Protocol:** Unix socket at `/run/nomopractic/nomopractic.sock` with NDJSON framing.
+
+**Request:** 
+```json
+{"id":"1","method":"get_battery_voltage","params":{}}
+```
+
+**Success Response:**
+```json
+{"id":"1","ok":true,"result":{"voltage_v":11.8}}
+```
+
+**Error Response:**
+```json
+{"id":"1","ok":false,"error":{"code":"HARDWARE_ERROR","message":"I2C bus unavailable"}}
+```
+
+Error codes: `UNKNOWN_METHOD`, `INVALID_PARAMS`, `HARDWARE_ERROR`, `NOT_READY`, `INTERNAL_ERROR`.
+
+**Full schema:** See `nomothetic/docs/hat_ipc_schema.md` (authoritative) and `nomopractic/src/ipc/schema.rs` (must match).
+
+When updating either schema, update BOTH files and run full integration tests.
+
+---
+
+## Security & Performance Checklist
+
+### Rust-Specific
+- [ ] No `unwrap()` in production code (use `?` or `match`)
+- [ ] No `unsafe` without `// SAFETY:` comment explaining invariants
+- [ ] All `tokio::sync::Mutex` guards released before async `.await`
+- [ ] No unbounded channels (set capacity)
+- [ ] Lint clean: `cargo clippy -- -D warnings`
+
+### Python-Specific
+- [ ] Input validation: check types, lengths, ranges before use
+- [ ] No `eval()` or `exec()` on user input
+- [ ] Secrets NOT in code (use env vars or config files with `.gitignore`)
+- [ ] Conditional imports for Pi libraries (graceful degradation on non-Pi)
+- [ ] Type hints on all public functions: `def capture(path: str) -> bytes:`
+
+### Cross-Repo
+- [ ] IPC schema synchronized (Rust types ↔ Python dataclasses)
+- [ ] Hardware register constants match (BCM pins, I2C address, register offsets)
+- [ ] Error codes consistent (both sides understand all error types)
+- [ ] Test coverage validates round-trip: Python → IPC → Rust → IPC → Python
+
+---
+
+## Development Workflow
+
+### Feature Development (End-to-End)
+
+1. **Design phase** → Propose feature with @design agent
+2. **Design review** → Verify plan with @review agent (architecture check)
+3. **Implementation** → Execute plan with @build agent
+4. **Implementation review** → @review agent checks tests, lint, docs, security
+5. **Deployment** → Merge to main, GitHub Actions CI, deploy to Pi
+
+### Phase Completion Checklist
+
+- [ ] All objectives met (roadmap)
+- [ ] All tests passing (`cargo test`, `pytest`)
+- [ ] All lints passing (`clippy`, `ruff`, `black --check`)
+- [ ] Documentation complete (docstrings, ADRs if needed, roadmap updated)
+- [ ] Cross-repo consistency validated (IPC schema, error codes, HAT API)
+- [ ] Integration tested on Raspberry Pi (or via hardware mocks)
+- [ ] Changelog updated with user-facing changes
+
+---
+
+## Repositories at a Glance
+
+### nomopractic (Rust HAT Daemon)
+
+- **Purpose:** Low-latency hardware control via NDJSON IPC
+- **Key Commands:** `cargo build`, `cargo test`, `cargo clippy -- -D warnings`
+- **Cross-compile:** `cross build --target aarch64-unknown-linux-gnu --release`
+- **Deploy:** `scripts/deploy.sh <version> <pi-host>`
+- **Phases:** 8 complete (GPIO, servo, motor, battery, audio, ultrasonic)
+- **Test count:** 149 tests (123 unit + 26 integration)
+
+### nomothetic (Python REST API & HAT Client)
+
+- **Purpose:** REST API, camera control, telemetry, HAT client
+- **Key Commands:** `pip install -e .`, `pytest`, `black ., ruff check .`
+- **Optional extras:** `[api]`, `[web]`, `[telemetry]`, `[pi]`
+- **Phases:** 8 complete (camera, streaming, API, telemetry, HAT client, motors, audio)
+- **Test count:** 262 tests
+
+### nomourgoi (This Repo — Agents & Knowledge)
+
+- **Purpose:** Design, Build, Review agents; shared context; development standards
+- **Contents:**
+  - `.github/.copilot-instructions.md` (this file)
+  - `.github/agents/design-agent.agent.md` + `.github/prompts/design-agent.prompt.md`
+  - `.github/agents/build-agent.agent.md` + `.github/prompts/build-agent.prompt.md`
+  - `.github/agents/review-agent.agent.md` + `.github/prompts/review-agent.prompt.md`
+  - `docs/project-context.md` (consolidated architecture)
+  - `docs/coding-standards.md` (unified style guide)
+  - `docs/security-checklist.md` (risk inventory)
+
+---
+
+## Getting Started
+
+### For Design Work
+```bash
+# Propose Phase 9 (example)
+@design Outline the next phase: Remote firmware OTA updates
+# Agent reads roadmaps, analyzes architecture, proposes detailed plan
+# Output: Detailed markdown plan with steps, dependencies, verification criteria
+```
+
+### For Implementation
+```bash
+# Execute the plan
+@build Implement Phase 9 according to the detailed plan in PHASE_9_PLAN.md
+# Agent writes code, tests, docs, runs all checks, commits when done
+```
+
+### For Review
+```bash
+# Validate the implementation
+@review Verify Phase 9 implementation meets plan and quality standards
+# Agent runs tests, lints, reviews code, flags risks, suggests fixes
+```
+
+---
+
+## Continuous Learning
+
+- **Roadmaps:** Watch `nomopractic/docs/roadmap.md` and `nomothetic/docs/roadmap.md`
+- **Architecture:** Reference `nomopractic/docs/architecture.md` and `nomothetic/docs/architecture.md`
+- **ADRs:** Review architecture decision records in `docs/adr/` of each repo
+- **IPC Contract:** Keep `nomothetic/docs/hat_ipc_schema.md` and `nomopractic/src/ipc/schema.rs` in sync
+- **Hardware:** See `nomothetic/docs/pi_hardware.md` for device specs and pinouts
+
+---
+
+## Contact & Governance
+
+- **Project Owner:** Perceptua-Nomon organization
+- **Licensing:** Check LICENSE files in each repo
+- **Contributing:** See CONTRIBUTING.md in each repo
+- **CI/CD:** GitHub Actions (`.github/workflows/`)
+
+---
+
+## Appendix: Quality Metrics
+
+### Rust Code Quality
+
+```bash
+cargo fmt --check
+cargo clippy -- -D warnings
+cargo test --all
+```
+
+### Python Code Quality
+
+```bash
+black . --check
+ruff check .
+mypy src/nomothetic
+pytest
+```
+
+### Cross-Repo Alignment
+
+- IPC schema consistency: Compare Rust `src/ipc/schema.rs` with Python `nomothetic/src/nomothetic/hat.py`
+- Hardware constants: Compare Rust `src/hat/gpio.rs` with Python `nomothetic/src/nomothetic/hat.py`
+- Error codes: Both sides recognize all error codes
+- Test coverage: Integration tests validate round-trip serialization
