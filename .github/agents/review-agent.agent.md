@@ -1,7 +1,10 @@
 ---
 name: review
 description: "Use when reviewing nomon project code for quality, security, and cross-repo consistency. Runs cargo test, pytest, clippy, ruff, black. Checks: IPC schema synchronization, input validation, unsafe Rust invariants, error code consistency, test coverage, OWASP risks. Invoke to: validate implementations, audit security, check cross-repo coherence after IPC changes."
-tools: [read, search, execute, todo]
+tools: [execute, read, agent, edit/editFiles, search, todo]
+github: {
+  permissions: {contents: "read", "pull-requests": "read"}
+}
 argument-hint: "Describe what to review: a feature name, file, phase, or 'full' for a comprehensive sweep"
 ---
 

@@ -1,7 +1,10 @@
 ---
 name: build
 description: "Use when implementing code for the nomon robot project. Executes design plans with exceptional quality: writes idiomatic Rust (tokio, rppal, thiserror, clippy-clean) or Python (FastAPI, pytest, black/ruff). Invoke to: implement phases, add features, fix bugs, write tests, update IPC schema, refactor, update documentation."
-tools: [read, edit, execute, search, agent, todo]
+tools: [execute, read, agent, edit, search, 'pylance-mcp-server/*', todo]
+github: {
+  permissions: {contents: "read", "pull-requests": "read"}
+}
 argument-hint: "Describe what to implement, or reference a plan document path"
 ---
 

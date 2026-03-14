@@ -1,7 +1,10 @@
 ---
 name: design
 description: "Use when planning new phases, features, or architectural changes for the nomon robot project. Analyzes nomopractic (Rust HAT daemon), nomothetic (Python fleet API), or both. Invoke to: propose phase plans, design IPC contracts, identify cross-repo implications, evaluate feasibility, flag architectural risks, update roadmaps."
-tools: [read, search, edit, agent, todo]
+tools: [execute, read, agent, edit, search, web, todo, vscode.mermaid-chat-features/renderMermaidDiagram]
+github: {
+  permissions: {contents: "read", "pull-requests": "read"}
+}
 argument-hint: "Describe the feature, phase, or architectural question to analyze"
 ---
 
