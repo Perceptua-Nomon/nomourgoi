@@ -119,10 +119,10 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 
 ```bash
 # Check for unwrap in production Rust (should return zero results outside #[cfg(test)])
-grep -n "\.unwrap()\|\.expect(" nomopractic/src/**/*.rs | grep -v "#\[cfg(test)\]"
+rg -n "\.unwrap\(\)|\.expect\(" nomopractic/src/ --include="*.rs" | grep -v "#\[cfg(test)\]"
 
 # Check for unsafe blocks in Rust
-grep -n "unsafe" nomopractic/src/**/*.rs
+rg -n "unsafe" nomopractic/src/ --include="*.rs"
 
 # Check for hardcoded secrets in Python
 grep -rn "password\s*=\s*['\"].\|api_key\s*=\s*['\"].\|token\s*=\s*['\"]." nomothetic/src/

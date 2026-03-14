@@ -24,7 +24,7 @@ Invoke the **design agent** with the following instruction:
 > **If the phase IS already on the roadmap** (existing phase): Perform a consistency check — verify that the planned features align with:
 > - The current IPC schema (`nomothetic/docs/hat_ipc_schema.md`)
 > - The architecture docs (`nomopractic/docs/architecture.md`, `nomothetic/docs/architecture.md`)
-> - Project coding standards and philosophy (`nomourgoi/docs/coding-standards.md`)
+> - Project coding standards and philosophy (`docs/coding-standards.md`)
 > - Anything already implemented that the plan depends on
 >
 > Make any corrections needed to the roadmap or supporting docs so the plan is internally consistent and ready to build."

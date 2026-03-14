@@ -249,10 +249,10 @@ When modifying the IPC interface, updates are required in **both repos simultane
 
 | Change | nomopractic file | nomothetic file(s) |
 |--------|------------------|--------------------|
-| New method | `src/ipc/schema.rs`, `src/ipc/handler.rs` | `src/nomothetic/hat.py`, `docs/hat_ipc_schema.md` |
-| New param field | `src/ipc/schema.rs` | `src/nomothetic/hat.py`, `docs/hat_ipc_schema.md` |
-| New error code | `src/ipc/schema.rs` | `src/nomothetic/hat.py` |
-| New result field | `src/ipc/schema.rs` | `src/nomothetic/hat.py`, `docs/hat_ipc_schema.md` |
+| New method | `src/ipc/schema.rs`, `src/ipc/handler.rs` | `nomothetic/src/nomothetic/hat.py`, `docs/hat_ipc_schema.md` |
+| New param field | `src/ipc/schema.rs` | `nomothetic/src/nomothetic/hat.py`, `docs/hat_ipc_schema.md` |
+| New error code | `src/ipc/schema.rs` | `nomothetic/src/nomothetic/hat.py` |
+| New result field | `src/ipc/schema.rs` | `nomothetic/src/nomothetic/hat.py`, `docs/hat_ipc_schema.md` |
 
 The `hat_ipc_schema.md` file is the **authoritative human-readable schema**. It must always reflect the current implementation.
 

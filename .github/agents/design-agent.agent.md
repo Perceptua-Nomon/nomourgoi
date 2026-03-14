@@ -71,5 +71,5 @@ One sentence describing what this phase achieves.
 - nomothetic roadmap: `nomothetic/docs/roadmap.md`
 - nomopractic architecture: `nomopractic/docs/architecture.md`
 - nomothetic architecture: `nomothetic/docs/architecture.md`
-- Project context: `nomourgoi/docs/project-context.md`
-- Coding standards: `nomourgoi/docs/coding-standards.md`
+- Project context: `docs/project-context.md`
+- Coding standards: `docs/coding-standards.md`

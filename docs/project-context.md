@@ -173,7 +173,7 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `nomothetic/camera.py` | OV5647 capture via picamera2 |
 | `nomothetic/streaming.py` | MJPEG Flask server for local LAN streaming |
 | `nomothetic/telemetry.py` | MQTT background publisher (paho-mqtt) |
-| `nomothetic/hat.py` | IPC client for nomopractic daemon (`HatClient`) |
+| `nomothetic/src/nomothetic/hat.py` | IPC client for nomopractic daemon (`HatClient`) |
 | `nomothetic/audio.py` | USB microphone + HifiBerry DAC control |
 
 ---
@@ -210,7 +210,7 @@ ruff check .
 
 ## Pi Hardware
 
-- SSH: `perceptua@perceptua`, key `~/.ssh/id_ed25519`
+- SSH: `<pi-user>@<pi-host>`, key `~/.ssh/id_ed25519`
 - USB mic: ALSA card 2 (Texas Instruments PCM2902)
 - Speaker DAC: HifiBerry (ALSA card 1, `sndrpihifiberry`)
 - Speaker enable: BCM20 (`spk_en` on Robot HAT V4)
