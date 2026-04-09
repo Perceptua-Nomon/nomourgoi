@@ -17,15 +17,16 @@ Invoke the **design agent** with the following instruction:
 
 > "For **${input:phase}**:
 >
-> First, read both roadmaps (`nomopractic/docs/roadmap.md` and `nomothetic/docs/roadmap.md`) to determine whether this phase is already planned.
+> First, read all roadmaps (`nomopractic/docs/roadmap.md` and `nomothetic/docs/roadmap.md`) to determine whether this phase is already planned.
 >
-> **If the phase is NOT on the roadmap** (new phase): Research the codebase and produce a complete implementation plan. Add the plan to both roadmaps in the appropriate location before handing off.
+> **If the phase is NOT on the roadmap** (new phase): Research the codebase and produce a complete implementation plan. Add the plan to the appropriate roadmap(s) before handing off.
 >
 > **If the phase IS already on the roadmap** (existing phase): Perform a consistency check — verify that the planned features align with:
 > - The current IPC schema (`nomothetic/docs/hat_ipc_schema.md`)
 > - The architecture docs (`nomopractic/docs/architecture.md`, `nomothetic/docs/architecture.md`)
 > - Project coding standards and philosophy (`docs/coding-standards.md`)
 > - Anything already implemented that the plan depends on
+> - If the phase touches nomotactic: the lightweight UI design philosophy (minimal pages, simple state, speed-first)
 >
 > Make any corrections needed to the roadmap or supporting docs so the plan is internally consistent and ready to build."
 
@@ -81,17 +82,18 @@ When the phase is fully implemented and reviewed, and all iteration is complete,
 
 > "For **${input:phase}**, update all documentation to reflect the completed work:
 >
-> - Mark the phase as complete on both roadmaps
+> - Mark the phase as complete on all relevant roadmaps
 > - Add `///` doc comments to all new public items
 > - If a significant architectural decision was made, create an ADR in `docs/adr/`
-> - If the IPC schema changed, confirm `nomothetic/docs/hat_ipc_schema.md` is updated accordingly"
+> - If the IPC schema changed, confirm `nomothetic/docs/hat_ipc_schema.md` is updated accordingly
+> - If nomotactic changed, verify UI documentation is accurate"
 
 ---
 
 ## Completion
 
 When the phase is fully reviewed and passing, confirm to the user:
-- Final test counts for both repos
+- Final test counts for all affected repos
 - Lint status
 - List of files modified
-- That both roadmaps are updated to mark the phase complete
+- That all relevant roadmaps are updated to mark the phase complete
