@@ -27,6 +27,7 @@ Invoke the **design agent** with the following instruction:
 > - Project coding standards and philosophy (`docs/coding-standards.md`)
 > - Anything already implemented that the plan depends on
 > - If the phase touches nomotactic: the lightweight UI design philosophy (minimal pages, simple state, speed-first)
+> - If the phase touches nomographic: Flyway migration naming, central vs local schema separation
 >
 > Make any corrections needed to the roadmap or supporting docs so the plan is internally consistent and ready to build."
 
@@ -86,7 +87,8 @@ When the phase is fully implemented and reviewed, and all iteration is complete,
 > - Add `///` doc comments to all new public items
 > - If a significant architectural decision was made, create an ADR in `docs/adr/`
 > - If the IPC schema changed, confirm `nomothetic/docs/hat_ipc_schema.md` is updated accordingly
-> - If nomotactic changed, verify UI documentation is accurate"
+> - If nomotactic changed, verify UI documentation is accurate
+> - If nomographic changed, verify migration scripts follow Flyway naming and central/local separation is correct"
 
 ---
 

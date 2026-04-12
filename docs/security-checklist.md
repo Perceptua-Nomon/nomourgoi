@@ -59,6 +59,8 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 | P2 | No shell string interpolation with user data (use `subprocess.run([...])` lists) | CRITICAL — command injection |
 | P3 | File paths from user input validated/normalised; no path traversal | HIGH — arbitrary file read/write |
 | P4 | FastAPI endpoint params use Pydantic models with type/range validation | HIGH — INVALID_PARAMS reach hardware |
+| P14 | Gremlin property keys whitelisted against model fields in update methods | HIGH — arbitrary property injection |
+| P15 | `_sanitize_gremlin_value` rejects null bytes and control characters | MEDIUM — parser confusion |
 
 ### Secrets Management
 
@@ -76,6 +78,12 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 | P9 | REST API uses HTTPS (no plaintext HTTP endpoints) | HIGH |
 | P10 | Camera and streaming endpoints are authenticated | HIGH |
 | P11 | CORS policy is restrictive, not `allow_origins=["*"]` on authenticated routes | MEDIUM |
+| P16 | Server-side logout endpoint revokes refresh tokens | MEDIUM — token persists after logout |
+| P17 | Device-mode startup warns if Tailscale not detected | LOW — silent misconfiguration |
+| P18 | Device pairing secret generated with `secrets.token_urlsafe` (≥128 bits) | HIGH — predictable secret |
+| P19 | Pairing secret consumed on first use (single-use, constant-time compare) | HIGH — replay attack |
+| P20 | Device JWT issuer (`nomon-device`) differs from central (`nomon-central`) | HIGH — cross-mode token reuse |
+| P21 | Pairing endpoint rate-limited (3/min per IP) | MEDIUM — brute-force pairing secret |
 
 ### Dependency Safety
 

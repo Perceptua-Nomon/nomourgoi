@@ -6,12 +6,14 @@ Consolidated architecture reference for the nomon robot fleet development agents
 
 ## System Overview
 
-**nomon** is a fleet of intelligent, semi-autonomous robots providing utility to working- and middle-class people. The system is split across three tightly integrated repositories:
+**nomon** is a fleet of intelligent, semi-autonomous robots providing utility to working- and middle-class people. The system is split across five integrated repositories:
 
 | Repository | Language | Role |
 |------------|----------|------|
 | **nomopractic** | Rust | Low-latency HAT hardware daemon on Raspberry Pi. All hardware register knowledge lives here. |
-| **nomothetic** | Python | Fleet API package: REST, camera, telemetry, HAT client. No hardware knowledge — delegates to Rust via IPC. |
+| **nomothetic** | Python | Fleet API package: REST, camera, telemetry, HAT client. Runs in device mode (on Pi) or central mode (fleet server). |
+| **nomotactic** | TypeScript | User-facing Expo (React Native) app: Android, iOS, and web from a single codebase. |
+| **nomographic** | SQL | ArcadeDB graph database schemas and Flyway migrations. Central (fleet-wide) and local (per-device) instances. |
 | **nomourgoi** | Markdown | Development infrastructure: agents, prompts, shared standards. |
 
 ---
@@ -19,27 +21,36 @@ Consolidated architecture reference for the nomon robot fleet development agents
 ## Runtime Architecture
 
 ```
-[ Mobile / Remote client ]
-        │  HTTPS
-        ▼
-[ nomothetic — FastAPI on Pi ]
-  ├── camera.py     (picamera2 OV5647)
-  ├── streaming.py  (MJPEG Flask)
-  ├── telemetry.py  (paho-mqtt)
-  ├── audio.py      (ALSA USB mic + HifiBerry DAC)
-  └── hat.py        (IPC client)
-        │  Unix socket NDJSON
-        ▼
-[ nomopractic — Rust daemon on Pi ]
-  ├── hat/servo.rs      (PWM servo, TTL lease)
-  ├── hat/motor.rs      (TC1508S DC motor)
-  ├── hat/battery.rs    (ADC voltage)
-  ├── hat/gpio.rs       (named GPIO pins)
-  ├── hat/ultrasonic.rs (HC-SR04 distance)
-  └── hat/pwm.rs        (I2C PWM register protocol)
-        │  rppal I2C
-        ▼
-[ SunFounder Robot HAT V4 ]
+┌────────────────────────────────────────────────────────────────────────┐
+│  User Layer                                                            │
+│                                                                        │
+│   nomotactic (Expo)                                                    │
+│   ├── Android / iOS (mobile)                                           │
+│   └── Web (browser)                                                    │
+│        │                               │                               │
+│        │ HTTPS :443                    │ HTTPS :8443                    │
+│        ▼                               ▼                               │
+│   ┌──────────────────┐         ┌──────────────────────────────────┐    │
+│   │ nomothetic        │         │ nomothetic (device mode, on Pi)  │    │
+│   │ (central mode)    │         │                                  │    │
+│   │ Auth, Fleet,      │         │ JWT Auth (pairing), Camera, HAT, │    │
+│   │ User mgmt         │         │ Audio, Stream, Calibration,      │    │
+│   └────────┬──────────┘         │ Routines                         │    │
+│            │                    └─────────────┬───────────────────┘    │
+│            │                                   │                       │
+│            ▼                                   │ Unix socket NDJSON    │
+│   ┌──────────────────┐                         ▼                       │
+│   │ ArcadeDB (central)│         ┌──────────────────────────────────┐   │
+│   │ User, Vehicle,    │         │ nomopractic (Rust daemon on Pi)  │   │
+│   │ Telemetry         │         │ Servo, Motor, ADC, GPIO,         │   │
+│   └──────────────────┘         │ Ultrasonic, Speaker              │   │
+│                                 └─────────────┬───────────────────┘   │
+│                                                │ rppal I2C            │
+│                                                ▼                       │
+│                                 ┌──────────────────────────────────┐   │
+│                                 │ SunFounder Robot HAT V4          │   │
+│                                 └──────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -169,20 +180,63 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | Module | Purpose |
 |--------|---------|
 | `nomothetic/__init__.py` | Package exports |
-| `nomothetic/api.py` | FastAPI HTTPS REST — primary control surface |
+| `nomothetic/api.py` | FastAPI HTTPS REST — primary control surface (device + central modes) |
+| `nomothetic/mode.py` | API mode enum (`device` / `central`) and config-driven selection |
+| `nomothetic/auth.py` | JWT auth: token issuance, validation, password hashing (central + device modes) |
+| `nomothetic/auth_routes.py` | `/api/auth/*` endpoints (register, login, refresh, logout, profile) — central mode |
+| `nomothetic/device_auth_routes.py` | `/api/device/auth/*` endpoints (pairing, refresh, profile) — device mode |
+| `nomothetic/pairing.py` | Device pairing secret lifecycle (generate, verify, consume) |
+| `nomothetic/fleet.py` | Fleet data: ArcadeDB queries for device management (central mode) |
+| `nomothetic/fleet_routes.py` | `/api/fleet/*` endpoints (device CRUD) — central mode |
+| `nomothetic/rate_limit.py` | Sliding-window rate limiting for auth and pairing endpoints |
+| `nomothetic/db.py` | ArcadeDB HTTP API client with Gremlin query support |
+| `nomothetic/user_store.py` | User persistence (Protocol + InMemory + Gremlin backends) |
+| `nomothetic/fleet_store.py` | Fleet device persistence (Protocol + InMemory + Gremlin backends) |
+| `nomothetic/token_store.py` | Refresh token persistence (Protocol + InMemory + Gremlin backends) |
+| `nomothetic/gremlin_utils.py` | Shared Gremlin value sanitiser |
 | `nomothetic/camera.py` | OV5647 capture via picamera2 |
 | `nomothetic/streaming.py` | MJPEG Flask server for local LAN streaming |
 | `nomothetic/telemetry.py` | MQTT background publisher (paho-mqtt) |
-| `nomothetic/src/nomothetic/hat.py` | IPC client for nomopractic daemon (`HatClient`) |
+| `nomothetic/hat.py` | IPC client for nomopractic daemon (`HatClient`) |
 | `nomothetic/audio.py` | USB microphone + HifiBerry DAC control |
+
+### nomotactic (TypeScript / Expo)
+
+| Path | Purpose |
+|------|---------|
+| `app/_layout.tsx` | Root layout: AuthProvider, StatusBar, theme |
+| `app/index.tsx` | Smart entry: landing (web) / redirect (mobile) / device pairing prompt |
+| `app/login.tsx` | Login / register screen |
+| `app/(app)/_layout.tsx` | Auth guard, CommandInput bar |
+| `app/(app)/index.tsx` | Device control dashboard (expandable cards) |
+| `lib/api.ts` | Typed API client (fetch wrapper, per-URL auth headers) |
+| `lib/auth.tsx` | AuthContext: central + device JWT management, pairing, expo-secure-store |
+| `lib/ble.ts` | BLE service interface + mock implementation |
+| `lib/theme.ts` | Colour palette, spacing, typography constants |
+| `constants/config.ts` | API URLs (DEVICE_API_URL, CENTRAL_API_URL) |
+| `components/CommandInput.tsx` | AI-ready command input bar |
+
+### nomographic (SQL / Flyway)
+
+| Path | Purpose |
+|------|---------|
+| `central/sql/V1__create_vehicle_schema.sql` | Vehicle + TelemetryReading vertices, HasTelemetry edge |
+| `central/sql/V2__add_user_schema.sql` | User vertex + OwnsDevice edge |
+| `central/sql/V3__create_refresh_token.sql` | RefreshToken vertex with token_hash, email, expiry |
+| `local/sql/V1__create_device_schema.sql` | DeviceState + OperationLog vertices, Performed edge |
+| `central/flyway.toml` | Flyway config for central ArcadeDB server |
+| `local/flyway.toml` | Flyway config for local embedded ArcadeDB |
+| `docker-compose.yml` | ArcadeDB with Gremlin Server plugin |
 
 ---
 
-## Development Status (Phase 8 Complete)
+## Development Status (Phase 17 Complete)
 
-- **nomopractic**: 149 tests (123 unit + 26 integration)
-- **nomothetic**: 262 tests
-- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion
+- **nomopractic**: 222 tests (184 unit + 38 integration), Phases 1–11 complete
+- **nomothetic**: 531 tests, Phases 1–11 + Phases 13–17 complete
+- **nomotactic**: Phase 1 (App Foundation & Auth) complete — auth flow, device dashboard, web landing, device pairing, BLE stubs, command input
+- **nomographic**: V1 central (Vehicle) + V1 local (DeviceState) + V2 central (User & OwnsDevice) + V3 central (RefreshToken) schemas complete. Docker Compose with Gremlin Server plugin.
+- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion, calibration, routines, central mode auth, user-facing app, ArcadeDB integration, deploy hardening, security hardening, device-mode auth
 - Target platform: Raspberry Pi Zero 2W, Debian trixie (aarch64)
 - Dev/CI platform: x86_64 Linux (cross-compile via `cross`)
 
@@ -200,10 +254,17 @@ cross build --target aarch64-unknown-linux-gnu --release
 make check   # fmt + clippy + test
 
 # nomothetic test + lint
-pip install -e .
-pytest
-black .
-ruff check .
+uv run pytest tests/
+uv run ruff check src/ tests/
+uv run black --check src/ tests/
+uv run mypy src/ tests/
+
+# nomotactic lint
+npx expo lint
+
+# nomographic migration validation
+flyway -configFiles=central/flyway.toml validate
+flyway -configFiles=local/flyway.toml validate
 ```
 
 ---

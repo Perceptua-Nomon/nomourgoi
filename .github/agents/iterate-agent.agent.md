@@ -53,7 +53,9 @@ Invoke the **design** agent:
 >
 > Correct any inconsistencies in the roadmap or supporting docs so the plan is ready to build.
 >
-> If this phase touches nomotactic, ensure the design follows nomotactic principles: minimal pages, simple state, lightweight deps, speed-first UX."
+> If this phase touches nomotactic, ensure the design follows nomotactic principles: minimal pages, simple state, lightweight deps, speed-first UX.
+>
+> If this phase touches nomographic, ensure migration scripts follow Flyway naming conventions and that central vs local schema changes are correctly separated."
 
 **Gate check before proceeding:**
 - Does the plan have clear, numbered implementation steps?
@@ -132,6 +134,7 @@ Present the user with a final status:
 - nomopractic: X tests passing
 - nomothetic: X tests passing
 - nomotactic: lint clean
+- nomographic: flyway validate clean (if applicable)
 
 ### Lint Status
 All linters passing across all repos.
@@ -157,6 +160,7 @@ You are an **intelligent manager**, not a blind relay. Apply judgment:
 - **Review finds only INFO/LOW items?** Declare PASS — don't burn iterations on cosmetic polish.
 - **Same finding persists across iterations?** Escalate to the user — it may be a genuine architectural tension that needs a human decision.
 - **Phase touches nomotactic?** Double-check that the UI remains lightweight. Flag any introduction of heavy deps, unnecessary navigation, or complex state management.
+- **Phase touches nomographic?** Verify central vs local separation is correct, migrations follow Flyway naming, and no previously-applied migrations were modified.
 
 ## Constraints
 

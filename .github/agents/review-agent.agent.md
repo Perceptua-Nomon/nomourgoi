@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Use when reviewing nomon project code for quality, security, and cross-repo consistency. Runs cargo test, pytest, clippy, ruff, black, expo lint. Checks: IPC schema synchronization, REST API consistency, input validation, unsafe Rust invariants, error code consistency, test coverage, OWASP risks, UI weight & complexity. Invoke to: validate implementations, audit security, check cross-repo coherence after IPC or API changes."
+description: "Use when reviewing nomon project code for quality, security, and cross-repo consistency. Runs cargo test, pytest, clippy, ruff, black, expo lint, flyway validate. Checks: IPC schema synchronization, REST API consistency, database schema consistency, input validation, unsafe Rust invariants, error code consistency, test coverage, OWASP risks, UI weight & complexity. Invoke to: validate implementations, audit security, check cross-repo coherence after IPC or API changes."
 tools: [execute, read, agent, edit/editFiles, search, todo]
 github: {
   permissions: {contents: "read", "pull-requests": "read"}
@@ -39,6 +39,10 @@ cd nomothetic && source .venv/bin/activate && pytest -v --tb=short 2>&1 | tail -
 
 # nomotactic
 cd nomotactic && npx expo lint 2>&1
+
+# nomographic
+cd nomographic && flyway -configFiles=central/flyway.toml validate 2>&1
+cd nomographic && flyway -configFiles=local/flyway.toml validate 2>&1
 
 # Lints
 cd nomopractic && cargo clippy -- -D warnings 2>&1 | grep -E "^error|^warning"
@@ -84,6 +88,16 @@ cd nomothetic && source .venv/bin/activate && ruff check . && black --check .
 - [ ] `npx expo lint` passes clean
 - [ ] Bundle weight is reasonable — no large unused imports or assets
 
+### SQL / Cypher (nomographic)
+- [ ] Migration files follow Flyway naming: `V{N}__{description}.sql`
+- [ ] All `CREATE` statements use `IF NOT EXISTS`
+- [ ] Each migration file makes exactly one logical change
+- [ ] No modification of previously-applied migrations — new version file instead
+- [ ] Vertex/edge type names are PascalCase; property names are snake_case
+- [ ] Central and local migration versions are independent (no cross-numbering)
+- [ ] No hardcoded credentials in Flyway configs or migration scripts
+- [ ] `flyway validate` passes for both central and local configs
+
 ## Report Format
 
 Produce a **Review Report** with these sections:
@@ -95,6 +109,8 @@ Produce a **Review Report** with these sections:
 | nomopractic cargo test | N | N | N |
 | nomothetic pytest | N | N | N |
 | nomotactic expo lint | CLEAN / [violations] | — | — |
+| nomographic flyway validate (central) | CLEAN / [violations] | — | — |
+| nomographic flyway validate (local) | CLEAN / [violations] | — | — |
 
 ## Lint Results
 - nomopractic clippy: CLEAN / [violations]
@@ -102,6 +118,8 @@ Produce a **Review Report** with these sections:
 - nomothetic ruff: CLEAN / [violations]
 - nomothetic black: CLEAN / [violations]
 - nomotactic eslint: CLEAN / [violations]
+- nomographic flyway (central): CLEAN / [violations]
+- nomographic flyway (local): CLEAN / [violations]
 
 ## Findings
 | Severity | File | Line | Description | Recommendation |

@@ -1,6 +1,6 @@
 ---
 name: design
-description: "Use when planning new phases, features, or architectural changes for the nomon robot project. Analyzes nomopractic (Rust HAT daemon), nomothetic (Python fleet API), nomotactic (Expo/React Native UI), or any combination. Invoke to: propose phase plans, design IPC contracts, identify cross-repo implications, evaluate feasibility, flag architectural risks, update roadmaps."
+description: "Use when planning new phases, features, or architectural changes for the nomon robot project. Analyzes nomopractic (Rust HAT daemon), nomothetic (Python fleet API), nomotactic (Expo/React Native UI), nomographic (ArcadeDB schemas & migrations), or any combination. Invoke to: propose phase plans, design IPC contracts, identify cross-repo implications, evaluate feasibility, flag architectural risks, update roadmaps."
 tools: [execute, read, agent, edit, search, web, todo, vscode.mermaid-chat-features/renderMermaidDiagram]
 github: {
   permissions: {contents: "read", "pull-requests": "read"}
@@ -17,6 +17,9 @@ Produce clear, actionable development plans with numbered steps, explicit depend
 - **nomopractic**: Rust HAT daemon (tokio async, rppal I2C/GPIO, thiserror, NDJSON IPC over Unix socket)
 - **nomothetic**: Python fleet package (FastAPI HTTPS, picamera2, paho-mqtt, ALSA audio, conditional imports)
 - **nomotactic**: Expo / React Native user interface (TypeScript, expo-router, cross-platform web + mobile)
+- **nomographic**: ArcadeDB database schemas, DDL scripts, and Flyway migrations (Java + SQL/Cypher). Two deployment targets:
+  - **Central server** (`central/`): Fleet-wide vehicle data, telemetry history, user records — runs on a dedicated ArcadeDB server instance.
+  - **Local embedded** (`local/`): On-device database deployed to each nomon — stores operational state and local intelligence data in an embedded ArcadeDB instance.
 - **IPC contract**: Unix socket at `/run/nomopractic/nomopractic.sock`, NDJSON framing, method/result/error schema
 - **REST contract**: nomothetic FastAPI ↔ nomotactic client (the primary user-facing boundary)
 - **Hardware**: SunFounder Robot HAT V4, I2C 0x14, PWM channels 0–15, ADC channels A0–A7, TC1508S motor driver, HC-SR04 ultrasonic sensor
@@ -57,6 +60,7 @@ One sentence describing what this phase achieves.
 ## Cross-Repo Impacts
 - IPC changes: [new methods, modified fields, new error codes]
 - REST API changes: [new endpoints, modified responses, new error shapes]
+- Database changes: [new vertex/edge types, new properties, migration scripts needed]
 - Shared constants: [pins, addresses, register offsets]
 - UI impacts: [new screens, component changes, state changes]
 - Documentation updates: [schema, roadmap, ADRs]
@@ -70,6 +74,7 @@ One sentence describing what this phase achieves.
 - nomopractic: `cargo test && cargo clippy -- -D warnings`
 - nomothetic: `pytest && ruff check . && black --check .`
 - nomotactic: `npx expo lint`
+- nomographic: `flyway validate` (central), `flyway validate` (local)
 - Integration: [manual or integration test description]
 ```
 
@@ -91,5 +96,8 @@ One sentence describing what this phase achieves.
 - nomothetic architecture: `nomothetic/docs/architecture.md`
 - nomotactic entry point: `nomotactic/app/index.tsx`
 - nomotactic config: `nomotactic/app.json`, `nomotactic/package.json`
+- nomographic central migrations: `nomographic/central/sql/`
+- nomographic local migrations: `nomographic/local/sql/`
+- nomographic Flyway configs: `nomographic/central/flyway.toml`, `nomographic/local/flyway.toml`
 - Project context: `docs/project-context.md`
 - Coding standards: `docs/coding-standards.md`
