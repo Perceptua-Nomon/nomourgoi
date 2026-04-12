@@ -53,7 +53,9 @@ Invoke the **design** agent:
 >
 > Correct any inconsistencies in the roadmap or supporting docs so the plan is ready to build.
 >
-> If this phase touches nomotactic, ensure the design follows nomotactic principles: minimal pages, simple state, lightweight deps, speed-first UX."
+> If this phase touches nomotactic, ensure the design follows nomotactic principles: minimal pages, simple state, lightweight deps, speed-first UX.
+>
+> If this phase touches nomographic, ensure migration scripts follow versioned naming conventions and that central vs local schema changes are correctly separated."
 
 **Gate check before proceeding:**
 - Does the plan have clear, numbered implementation steps?
@@ -86,7 +88,9 @@ Invoke the **review** agent:
 
 > "Review all work completed for **[phase]**. Run the full test suites and linters for all affected repos, inspect all new and changed code, verify IPC/REST schema consistency, and apply the security checklist. Produce a complete findings report with severity ratings and recommendations."
 
-**Evaluate the review report:**
+**Always present the full review report to the user**, including all findings at every severity level (CRITICAL, HIGH, MEDIUM, LOW, and INFO). The user must see the complete results before proceeding.
+
+**Then evaluate the review report to decide next steps:**
 
 - **PASS with no required actions** → proceed to Step 5 (final docs).
 - **PASS WITH MINOR ISSUES** → proceed to Step 4 to fix remaining items.
@@ -132,12 +136,16 @@ Present the user with a final status:
 - nomopractic: X tests passing
 - nomothetic: X tests passing
 - nomotactic: lint clean
+- nomographic: migration validate clean (if applicable)
 
 ### Lint Status
 All linters passing across all repos.
 
 ### Review Iterations
 N review cycles completed. Final verdict: PASS.
+
+### Review Findings
+[Include the full findings table from the final review, at ALL severity levels including INFO. The user should see everything the review agent found.]
 
 ### Files Modified
 [grouped by repo]
@@ -154,9 +162,10 @@ You are an **intelligent manager**, not a blind relay. Apply judgment:
 
 - **Blocked by a design gap?** Send back to design with a specific question, don't ask build to guess.
 - **Build produced code that doesn't match the plan?** Point out the discrepancy before sending to review.
-- **Review finds only INFO/LOW items?** Declare PASS — don't burn iterations on cosmetic polish.
+- **Review finds only INFO/LOW items?** Declare PASS — don't burn iterations on cosmetic polish. Still display ALL findings to the user, including INFO items.
 - **Same finding persists across iterations?** Escalate to the user — it may be a genuine architectural tension that needs a human decision.
 - **Phase touches nomotactic?** Double-check that the UI remains lightweight. Flag any introduction of heavy deps, unnecessary navigation, or complex state management.
+- **Phase touches nomographic?** Verify central vs local separation is correct, migrations follow versioned naming, and no previously-applied migrations were modified.
 
 ## Constraints
 
