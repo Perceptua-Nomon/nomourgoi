@@ -13,7 +13,7 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | **nomopractic** | Rust | Low-latency HAT hardware daemon on Raspberry Pi. All hardware register knowledge lives here. |
 | **nomothetic** | Python | Fleet API package: REST, camera, telemetry, HAT client. Runs in device mode (on Pi) or central mode (fleet server). |
 | **nomotactic** | TypeScript | User-facing Expo (React Native) app: Android, iOS, and web from a single codebase. |
-| **nomographic** | SQL | ArcadeDB graph database schemas and Flyway migrations. Central (fleet-wide) and local (per-device) instances. |
+| **nomographic** | SQL | ArcadeDB graph database schemas and ArcadeDB-native migrations. Central (fleet-wide) and local (per-device) instances. |
 | **nomourgoi** | Markdown | Development infrastructure: agents, prompts, shared standards. |
 
 ---
@@ -216,7 +216,7 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `constants/config.ts` | API URLs (DEVICE_API_URL, CENTRAL_API_URL) |
 | `components/CommandInput.tsx` | AI-ready command input bar |
 
-### nomographic (SQL / Flyway)
+### nomographic (SQL / ArcadeDB Migrations)
 
 | Path | Purpose |
 |------|---------|
@@ -224,8 +224,6 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `central/sql/V2__add_user_schema.sql` | User vertex + OwnsDevice edge |
 | `central/sql/V3__create_refresh_token.sql` | RefreshToken vertex with token_hash, email, expiry |
 | `local/sql/V1__create_device_schema.sql` | DeviceState + OperationLog vertices, Performed edge |
-| `central/flyway.toml` | Flyway config for central ArcadeDB server |
-| `local/flyway.toml` | Flyway config for local embedded ArcadeDB |
 | `docker-compose.yml` | ArcadeDB with Gremlin Server plugin |
 
 ---
@@ -263,8 +261,8 @@ uv run mypy src/ tests/
 npx expo lint
 
 # nomographic migration validation
-flyway -configFiles=central/flyway.toml validate
-flyway -configFiles=local/flyway.toml validate
+./scripts/migrate.sh validate
+./scripts/migrate-local.sh validate
 ```
 
 ---

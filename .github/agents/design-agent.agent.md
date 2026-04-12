@@ -17,7 +17,7 @@ Produce clear, actionable development plans with numbered steps, explicit depend
 - **nomopractic**: Rust HAT daemon (tokio async, rppal I2C/GPIO, thiserror, NDJSON IPC over Unix socket)
 - **nomothetic**: Python fleet package (FastAPI HTTPS, picamera2, paho-mqtt, ALSA audio, conditional imports)
 - **nomotactic**: Expo / React Native user interface (TypeScript, expo-router, cross-platform web + mobile)
-- **nomographic**: ArcadeDB database schemas, DDL scripts, and Flyway migrations (Java + SQL/Cypher). Two deployment targets:
+- **nomographic**: ArcadeDB database schemas, DDL scripts, and ArcadeDB-native migrations (SQL/Cypher). Two deployment targets:
   - **Central server** (`central/`): Fleet-wide vehicle data, telemetry history, user records — runs on a dedicated ArcadeDB server instance.
   - **Local embedded** (`local/`): On-device database deployed to each nomon — stores operational state and local intelligence data in an embedded ArcadeDB instance.
 - **IPC contract**: Unix socket at `/run/nomopractic/nomopractic.sock`, NDJSON framing, method/result/error schema
@@ -74,7 +74,7 @@ One sentence describing what this phase achieves.
 - nomopractic: `cargo test && cargo clippy -- -D warnings`
 - nomothetic: `pytest && ruff check . && black --check .`
 - nomotactic: `npx expo lint`
-- nomographic: `flyway validate` (central), `flyway validate` (local)
+- nomographic: `./scripts/migrate.sh validate` (central), `./scripts/migrate-local.sh validate` (local)
 - Integration: [manual or integration test description]
 ```
 
@@ -98,6 +98,5 @@ One sentence describing what this phase achieves.
 - nomotactic config: `nomotactic/app.json`, `nomotactic/package.json`
 - nomographic central migrations: `nomographic/central/sql/`
 - nomographic local migrations: `nomographic/local/sql/`
-- nomographic Flyway configs: `nomographic/central/flyway.toml`, `nomographic/local/flyway.toml`
 - Project context: `docs/project-context.md`
 - Coding standards: `docs/coding-standards.md`

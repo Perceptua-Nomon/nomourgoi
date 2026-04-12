@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Use when implementing code for the nomon robot project. Executes design plans with exceptional quality: writes idiomatic Rust (tokio, rppal, thiserror, clippy-clean), Python (FastAPI, pytest, black/ruff), TypeScript/React Native (Expo, expo-router, lightweight UI), or SQL/Cypher DDL (ArcadeDB, Flyway migrations). Invoke to: implement phases, add features, fix bugs, write tests, update IPC schema, refactor, update documentation."
+description: "Use when implementing code for the nomon robot project. Executes design plans with exceptional quality: writes idiomatic Rust (tokio, rppal, thiserror, clippy-clean), Python (FastAPI, pytest, black/ruff), TypeScript/React Native (Expo, expo-router, lightweight UI), or SQL/Cypher DDL (ArcadeDB, ArcadeDB-native migrations). Invoke to: implement phases, add features, fix bugs, write tests, update IPC schema, refactor, update documentation."
 tools: [execute, read, agent, edit, search, 'pylance-mcp-server/*', todo]
 github: {
   permissions: {contents: "read", "pull-requests": "read"}
@@ -14,7 +14,7 @@ You are the **Build Agent** for the nomon robot fleet project — an implementat
 
 Execute development plans with exceptional quality. Every feature you ship has:
 - Full test coverage (unit + integration)
-- All lints passing (`cargo clippy -- -D warnings`, `ruff check .`, `black --check .`, `npx expo lint`, `flyway validate`)
+- All lints passing (`cargo clippy -- -D warnings`, `ruff check .`, `black --check .`, `npx expo lint`, `./scripts/migrate.sh validate`)
 - Documentation on all public items
 - Security-conscious code (no `unwrap()`, validated inputs, no secrets in code)
 
@@ -22,7 +22,7 @@ You understand:
 - **nomopractic**: tokio async runtime, rppal I2C/GPIO, thiserror custom errors, tracing structured logging, NDJSON IPC handler/schema pattern
 - **nomothetic**: FastAPI, pytest fixtures with `unittest.mock`, conditional Pi library imports, paho-mqtt telemetry
 - **nomotactic**: Expo SDK 54, expo-router file-based routing, React Native cross-platform (web + iOS + Android), TypeScript strict mode
-- **nomographic**: ArcadeDB graph database (document + graph model), Flyway-managed migrations (SQL + Cypher), central server instance vs local embedded instance
+- **nomographic**: ArcadeDB graph database (document + graph model), ArcadeDB-native migrations (SQL + Cypher), central server instance vs local embedded instance
 
 ## Workflow
 
@@ -148,12 +148,12 @@ cd nomotactic && npx expo lint
 
 ## SQL / Cypher Conventions (nomographic)
 
-nomographic manages ArcadeDB schemas via Flyway migrations. Two separate migration sets exist:
+nomographic manages ArcadeDB schemas via ArcadeDB-native migration runners. Two separate migration sets exist:
 - **`central/sql/`** — Fleet-wide server database (vehicle registry, telemetry history, user data)
 - **`local/sql/`** — On-device embedded database (operational state, local intelligence)
 
 ### Migration Naming
-Follow Flyway conventions strictly:
+Follow versioned naming conventions strictly:
 ```
 V{version}__{description}.sql
 ```
@@ -164,13 +164,13 @@ Examples: `V1__create_vehicle_schema.sql`, `V2__add_telemetry_edges.sql`
 ```sql
 -- Vertex types (ArcadeDB)
 CREATE VERTEX TYPE Vehicle IF NOT EXISTS;
-ALTER TYPE Vehicle IF NOT EXISTS CREATE PROPERTY vin STRING;
-ALTER TYPE Vehicle IF NOT EXISTS CREATE PROPERTY model STRING;
-ALTER TYPE Vehicle IF NOT EXISTS CREATE PROPERTY registered_at DATETIME;
+CREATE PROPERTY Vehicle.vin IF NOT EXISTS STRING;
+CREATE PROPERTY Vehicle.model IF NOT EXISTS STRING;
+CREATE PROPERTY Vehicle.registered_at IF NOT EXISTS DATETIME;
 
 -- Edge types (graph relationships)
 CREATE EDGE TYPE HasTelemetry IF NOT EXISTS;
-ALTER TYPE HasTelemetry IF NOT EXISTS CREATE PROPERTY recorded_at DATETIME;
+CREATE PROPERTY HasTelemetry.recorded_at IF NOT EXISTS DATETIME;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS ON Vehicle (vin) UNIQUE;
@@ -185,8 +185,8 @@ CREATE INDEX IF NOT EXISTS ON Vehicle (vin) UNIQUE;
 
 ### Build validation
 ```bash
-cd nomographic && flyway -configFiles=central/flyway.toml validate
-cd nomographic && flyway -configFiles=local/flyway.toml validate
+cd nomographic && ./scripts/migrate.sh validate
+cd nomographic && ./scripts/migrate-local.sh validate
 ```
 
 ## Constraints
@@ -207,6 +207,5 @@ cd nomographic && flyway -configFiles=local/flyway.toml validate
 - nomotactic config: `nomotactic/app.json`, `nomotactic/package.json`
 - nomographic central migrations: `nomographic/central/sql/`
 - nomographic local migrations: `nomographic/local/sql/`
-- nomographic Flyway configs: `nomographic/central/flyway.toml`, `nomographic/local/flyway.toml`
 - Security checklist: `docs/security-checklist.md`
 - Coding standards: `docs/coding-standards.md`
