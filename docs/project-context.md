@@ -225,6 +225,8 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `central/sql/V3__create_refresh_token.sql` | RefreshToken vertex with token_hash, email, expiry |
 | `local/sql/V1__create_device_schema.sql` | DeviceState + OperationLog vertices, Performed edge |
 | `docker-compose.yml` | ArcadeDB with Gremlin Server plugin |
+| `scripts/lib/migrate-common.sh` | Shared lineage tracking library (MetaType vertices + Supersedes edges) |
+| *Auto-generated* | `{Type}Meta` vertices and `Supersedes` edges created by post-migration lineage hook |
 
 ---
 
