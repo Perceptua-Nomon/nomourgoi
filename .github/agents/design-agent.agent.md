@@ -74,7 +74,7 @@ One sentence describing what this phase achieves.
 - nomopractic: `cargo test && cargo clippy -- -D warnings`
 - nomothetic: `pytest && ruff check . && black --check .`
 - nomotactic: `npx expo lint`
-- nomographic: `./scripts/migrate.sh validate` (central), `./scripts/migrate-local.sh validate` (local)
+- nomographic: `./scripts/migrate-central.sh validate` (central), `./scripts/migrate-local.sh validate` (local)
 - Integration: [manual or integration test description]
 ```
 

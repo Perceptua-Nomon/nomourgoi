@@ -263,7 +263,7 @@ uv run mypy src/ tests/
 npx expo lint
 
 # nomographic migration validation
-./scripts/migrate.sh validate
+./scripts/migrate-central.sh validate
 ./scripts/migrate-local.sh validate
 ```
 

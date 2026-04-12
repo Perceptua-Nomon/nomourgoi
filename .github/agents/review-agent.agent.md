@@ -41,7 +41,7 @@ cd nomothetic && source .venv/bin/activate && pytest -v --tb=short 2>&1 | tail -
 cd nomotactic && npx expo lint 2>&1
 
 # nomographic
-cd nomographic && ./scripts/migrate.sh validate 2>&1
+cd nomographic && ./scripts/migrate-central.sh validate 2>&1
 cd nomographic && ./scripts/migrate-local.sh validate 2>&1
 
 # Lints
@@ -96,7 +96,7 @@ cd nomothetic && source .venv/bin/activate && ruff check . && black --check .
 - [ ] Vertex/edge type names are PascalCase; property names are snake_case
 - [ ] Central and local migration versions are independent (no cross-numbering)
 - [ ] No hardcoded credentials in migration scripts
-- [ ] `./scripts/migrate.sh validate` passes for central
+- [ ] `./scripts/migrate-central.sh validate` passes for central
 - [ ] `./scripts/migrate-local.sh validate` passes for local
 
 ## Report Format
@@ -110,7 +110,7 @@ Produce a **Review Report** with these sections:
 | nomopractic cargo test | N | N | N |
 | nomothetic pytest | N | N | N |
 | nomotactic expo lint | CLEAN / [violations] | — | — |
-| nomographic migrate.sh validate (central) | CLEAN / [violations] | — | — |
+| nomographic migrate-central.sh validate (central) | CLEAN / [violations] | — | — |
 | nomographic migrate-local.sh validate (local) | CLEAN / [violations] | — | — |
 
 ## Lint Results
@@ -119,7 +119,7 @@ Produce a **Review Report** with these sections:
 - nomothetic ruff: CLEAN / [violations]
 - nomothetic black: CLEAN / [violations]
 - nomotactic eslint: CLEAN / [violations]
-- nomographic migrate.sh (central): CLEAN / [violations]
+- nomographic migrate-central.sh (central): CLEAN / [violations]
 - nomographic migrate-local.sh (local): CLEAN / [violations]
 
 ## Findings

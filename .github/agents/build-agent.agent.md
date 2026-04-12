@@ -14,7 +14,7 @@ You are the **Build Agent** for the nomon robot fleet project — an implementat
 
 Execute development plans with exceptional quality. Every feature you ship has:
 - Full test coverage (unit + integration)
-- All lints passing (`cargo clippy -- -D warnings`, `ruff check .`, `black --check .`, `npx expo lint`, `./scripts/migrate.sh validate`)
+- All lints passing (`cargo clippy -- -D warnings`, `ruff check .`, `black --check .`, `npx expo lint`, `./scripts/migrate-central.sh validate`)
 - Documentation on all public items
 - Security-conscious code (no `unwrap()`, validated inputs, no secrets in code)
 
@@ -185,7 +185,7 @@ CREATE INDEX IF NOT EXISTS ON Vehicle (vin) UNIQUE;
 
 ### Build validation
 ```bash
-cd nomographic && ./scripts/migrate.sh validate
+cd nomographic && ./scripts/migrate-central.sh validate
 cd nomographic && ./scripts/migrate-local.sh validate
 ```
 
