@@ -43,9 +43,9 @@ Consolidated architecture reference for the nomon robot fleet development agents
 │   │ ArcadeDB (central)│         ┌──────────────────────────────────┐   │
 │   │ User, Vehicle,    │         │ nomopractic (Rust daemon on Pi)  │   │
 │   │ Telemetry         │         │ Servo, Motor, ADC, GPIO,         │   │
-│   └──────────────────┘         │ Ultrasonic, Speaker              │   │
+│   └──────────────────┘         │ Ultrasonic, Speaker, BLE GATT   │   │
 │                                 └─────────────┬───────────────────┘   │
-│                                                │ rppal I2C            │
+│                                                │ rppal I2C + bluer BLE│
 │                                                ▼                       │
 │                                 ┌──────────────────────────────────┐   │
 │                                 │ SunFounder Robot HAT V4          │   │
@@ -86,12 +86,25 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | LED | 26 | Output | Status LED |
 | SpeakerEn | 20 | Output | HifiBerry amp enable |
 
+### BLE GATT UUIDs (Phase 13)
+
+All vendor-specific 128-bit UUIDs use base `e3a1XXXX-7b2a-4b9c-8f5a-2b7d6e4f1a3c`.
+
+| Service | UUID |
+|---------|------|
+| nomon Pairing | `e3a10001-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+| nomon Command | `e3a10002-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+| nomon WiFi Provisioning | `e3a10003-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+| nomon Status | `e3a10004-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+
+See nomopractic ADR-002 for the full GATT characteristic table and binary protocol.
+
 ### PicarX Motor Defaults
 
 | Motor | PWM channel | DIR pin BCM | Reversed |
 |-------|-------------|-------------|---------|
-| Motor 0 | 12 | 24 (D4) | false |
-| Motor 1 | 13 | 23 (D5) | false |
+| Motor 0 | 12 | 24 (D5) | false |
+| Motor 1 | 13 | 23 (D4) | true |
 
 ---
 
@@ -173,6 +186,12 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `src/hat/battery.rs` | Battery voltage via ADC A4 |
 | `src/hat/gpio.rs` | Named GPIO pins — `GpioPin` enum, `GpioBus` trait |
 | `src/hat/ultrasonic.rs` | HC-SR04 distance sensor (TRIG/ECHO GPIO timing) |
+| `src/ble/mod.rs` | BLE GATT server lifecycle, advertising (behind `ble` feature) |
+| `src/ble/protocol.rs` | Binary frame codec (opcode/seq/length/payload) |
+| `src/ble/services.rs` | GATT service + characteristic registration |
+| `src/ble/session.rs` | Pairing, HKDF key derivation, AES-CCM encryption |
+| `src/ble/bridge.rs` | BLE binary command → IPC handler dispatch |
+| `src/ble/wifi.rs` | WiFi provisioning: nmcli scan/connect/status |
 | `src/reset.rs` | MCU reset (assert BCM5 low ≥ 10 ms) |
 
 ### nomothetic (Python)
@@ -211,7 +230,10 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `app/(app)/index.tsx` | Device control dashboard (expandable cards) |
 | `lib/api.ts` | Typed API client (fetch wrapper, per-URL auth headers) |
 | `lib/auth.tsx` | AuthContext: central + device JWT management, pairing, expo-secure-store |
-| `lib/ble.ts` | BLE service interface + mock implementation |
+| `lib/ble.ts` | BLE service interface, mock + real implementations |
+| `lib/ble-protocol.ts` | Binary frame codec for BLE GATT (Phase 2) |
+| `lib/ble-session.ts` | AES-128-CCM session encryption + HKDF key derivation (Phase 2) |
+| `lib/transport.tsx` | Hybrid transport provider: BLE ↔ HTTPS switching (Phase 2) |
 | `lib/theme.ts` | Colour palette, spacing, typography constants |
 | `constants/config.ts` | API URLs (DEVICE_API_URL, CENTRAL_API_URL) |
 | `components/CommandInput.tsx` | AI-ready command input bar |
@@ -230,13 +252,13 @@ Consolidated architecture reference for the nomon robot fleet development agents
 
 ---
 
-## Development Status (Phase 17 Complete)
+## Development Status (BLE Pairing & Hybrid Connectivity Complete)
 
-- **nomopractic**: 222 tests (184 unit + 38 integration), Phases 1–11 complete
-- **nomothetic**: 531 tests, Phases 1–11 + Phases 13–17 complete
-- **nomotactic**: Phase 1 (App Foundation & Auth) complete — auth flow, device dashboard, web landing, device pairing, BLE stubs, command input
+- **nomopractic**: 258 tests, Phases 1–11 + Phase 13 (BLE GATT Server) complete
+- **nomothetic**: 531 tests, Phases 1–11 + Phases 13–18 complete
+- **nomotactic**: Phase 1 (App Foundation & Auth) + Phase 2 (BLE Integration) complete — auth flow, device dashboard, web landing, device pairing, BLE connectivity, hybrid transport, command input.
 - **nomographic**: V1 central (Vehicle) + V1 local (DeviceState) + V2 central (User & OwnsDevice) + V3 central (RefreshToken) schemas complete. Docker Compose with Gremlin Server plugin.
-- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion, calibration, routines, central mode auth, user-facing app, ArcadeDB integration, deploy hardening, security hardening, device-mode auth
+- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion, calibration, routines, central mode auth, user-facing app, ArcadeDB integration, deploy hardening, security hardening, device-mode auth, BLE GATT server, BLE pairing coordination, BLE client integration
 - Target platform: Raspberry Pi Zero 2W, Debian trixie (aarch64)
 - Dev/CI platform: x86_64 Linux (cross-compile via `cross`)
 
