@@ -43,9 +43,9 @@ Consolidated architecture reference for the nomon robot fleet development agents
 │   │ ArcadeDB (central)│         ┌──────────────────────────────────┐   │
 │   │ User, Vehicle,    │         │ nomopractic (Rust daemon on Pi)  │   │
 │   │ Telemetry         │         │ Servo, Motor, ADC, GPIO,         │   │
-│   └──────────────────┘         │ Ultrasonic, Speaker              │   │
+│   └──────────────────┘         │ Ultrasonic, Speaker, BLE GATT   │   │
 │                                 └─────────────┬───────────────────┘   │
-│                                                │ rppal I2C            │
+│                                                │ rppal I2C + bluer BLE│
 │                                                ▼                       │
 │                                 ┌──────────────────────────────────┐   │
 │                                 │ SunFounder Robot HAT V4          │   │
@@ -86,12 +86,25 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | LED | 26 | Output | Status LED |
 | SpeakerEn | 20 | Output | HifiBerry amp enable |
 
+### BLE GATT UUIDs (Phase 13)
+
+All vendor-specific 128-bit UUIDs use base `e3a1XXXX-7b2a-4b9c-8f5a-2b7d6e4f1a3c`.
+
+| Service | UUID |
+|---------|------|
+| nomon Pairing | `e3a10001-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+| nomon Command | `e3a10002-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+| nomon WiFi Provisioning | `e3a10003-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+| nomon Status | `e3a10004-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+
+See nomopractic ADR-002 for the full GATT characteristic table and binary protocol.
+
 ### PicarX Motor Defaults
 
 | Motor | PWM channel | DIR pin BCM | Reversed |
 |-------|-------------|-------------|---------|
-| Motor 0 | 12 | 24 (D4) | false |
-| Motor 1 | 13 | 23 (D5) | false |
+| Motor 0 | 12 | 24 (D5) | false |
+| Motor 1 | 13 | 23 (D4) | true |
 
 ---
 
@@ -127,26 +140,51 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `INVALID_PARAMS` | Missing or malformed params |
 | `HARDWARE_ERROR` | I2C or GPIO failure |
 | `NOT_READY` | Daemon not initialised |
-| `SERVO_LEASE_EXPIRED` | TTL watchdog fired |
+| `SERVO_LEASE_EXPIRED` | Servo lease TTL elapsed; channel idled until next command |
+| `ALREADY_RUNNING` | A routine is already active; call `stop_routine` first |
+| `TIMEOUT` | Ultrasonic ECHO pulse did not arrive within timeout |
+| `NO_ECHO` | Ultrasonic measurement outside valid range (2–400 cm) |
 | `INTERNAL_ERROR` | Unexpected Rust error |
 
-### IPC Methods (as of Phase 8)
+### IPC Methods (35 methods — Phases 1–11)
 
-| Method | Params | Result fields |
-|--------|--------|---------------|
-| `health` | `{}` | `status: "ok"` |
-| `get_battery_voltage` | `{}` | `voltage_v: f64` |
-| `set_servo_pulse_us` | `channel: u8, pulse_us: u32` | `channel, pulse_us` |
-| `set_servo_angle` | `channel: u8, angle: f64` | `channel, angle_deg` |
-| `reset_mcu` | `{}` | `reset: true` |
-| `read_gpio` | `pin: str` | `pin, value: bool` |
-| `write_gpio` | `pin: str, value: bool` | `pin, value` |
-| `set_motor_speed` | `motor: u8, speed_pct: f64` | `motor, speed_pct` |
-| `stop_all_motors` | `{}` | `stopped: true` |
-| `get_motor_status` | `{}` | `motors: [{motor, speed_pct, active}]` |
-| `read_ultrasonic` | `{}` | `distance_cm: f64` |
-| `enable_speaker` | `{}` | `enabled: true` |
-| `disable_speaker` | `{}` | `disabled: true` |
+| Method | Direction | Purpose |
+|--------|-----------|---------|
+| `health` | read | Daemon liveness and hardware connection status |
+| `get_battery_voltage` | read | Battery voltage via ADC channel A4 |
+| `read_adc` | read | Raw 16-bit value from ADC channel 0–7 |
+| `set_servo_pulse_us` | write | Set PWM channel pulse width in microseconds |
+| `set_servo_angle` | write | Set servo angle in degrees (0–180°) |
+| `get_servo_status` | read | Active servo TTL lease list |
+| `read_gpio` | read | Read named GPIO pin level |
+| `write_gpio` | write | Drive named GPIO output pin high/low |
+| `set_motor_speed` | write | Set single DC motor speed (signed %) |
+| `stop_all_motors` | write | Immediately stop all motors, clear leases |
+| `get_motor_status` | read | Active motor TTL lease list |
+| `drive` | write | Set all motors to same speed (atomic) |
+| `steer` | write | Set steering servo angle |
+| `pan_camera` | write | Set camera pan servo angle |
+| `tilt_camera` | write | Set camera tilt servo angle |
+| `reset_mcu` | write | Assert/de-assert MCU reset line |
+| `get_mcu_status` | read | MCU reset statistics since daemon start |
+| `read_ultrasonic` | read | HC-SR04 distance measurement |
+| `read_grayscale` | read | Raw ADC values from grayscale sensors |
+| `read_grayscale_normalized` | read | Calibration-normalized grayscale (0.0–1.0) |
+| `enable_speaker` | write | Assert speaker amplifier enable pin (BCM 20) |
+| `disable_speaker` | write | De-assert speaker amplifier enable pin |
+| `set_volume` | write | Set HifiBerry DAC output volume (0–100%) |
+| `get_volume` | read | Read current output volume |
+| `set_mic_gain` | write | Set USB microphone capture gain (0–100%) |
+| `get_mic_gain` | read | Read current microphone gain |
+| `get_calibration` | read | Full calibration store snapshot |
+| `set_motor_calibration` | write | Adjust motor calibration (partial update) |
+| `set_servo_calibration` | write | Set servo trim offset (µs) |
+| `calibrate_grayscale` | write | Capture live ADC as surface reference value |
+| `save_calibration` | write | Persist calibration store to disk |
+| `reset_calibration` | write | Revert calibration to factory defaults |
+| `start_routine` | write | Start a named autonomous routine |
+| `stop_routine` | write | Stop active routine, return telemetry stats |
+| `get_routine_status` | read | Query routine engine state |
 
 **Authoritative schema doc:** `nomothetic/docs/hat_ipc_schema.md`
 
@@ -173,7 +211,16 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `src/hat/battery.rs` | Battery voltage via ADC A4 |
 | `src/hat/gpio.rs` | Named GPIO pins — `GpioPin` enum, `GpioBus` trait |
 | `src/hat/ultrasonic.rs` | HC-SR04 distance sensor (TRIG/ECHO GPIO timing) |
+| `src/ble/mod.rs` | BLE GATT server lifecycle, advertising (behind `ble` feature) |
+| `src/ble/protocol.rs` | Binary frame codec (opcode/seq/length/payload) |
+| `src/ble/services.rs` | GATT service + characteristic registration |
+| `src/ble/session.rs` | Pairing, HKDF key derivation, AES-CCM encryption |
+| `src/ble/bridge.rs` | BLE binary command → IPC handler dispatch |
+| `src/ble/wifi.rs` | WiFi provisioning: nmcli scan/connect/status |
 | `src/reset.rs` | MCU reset (assert BCM5 low ≥ 10 ms) |
+| `src/calibration.rs` | CalibrationStore: motor/servo/grayscale calibration |
+| `src/testing.rs` | Shared test mocks: MockI2c, MockGpio, MockAlsaControl (`#[cfg(test)]`) |
+| `src/ipc/params.rs` | Typed IPC parameter extraction helpers (ParamExtractor) |
 
 ### nomothetic (Python)
 
@@ -194,6 +241,7 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `nomothetic/fleet_store.py` | Fleet device persistence (Protocol + InMemory + Gremlin backends) |
 | `nomothetic/token_store.py` | Refresh token persistence (Protocol + InMemory + Gremlin backends) |
 | `nomothetic/gremlin_utils.py` | Shared Gremlin value sanitiser |
+| `nomothetic/db_utils.py` | Shared database query utilities |
 | `nomothetic/camera.py` | OV5647 capture via picamera2 |
 | `nomothetic/streaming.py` | MJPEG Flask server for local LAN streaming |
 | `nomothetic/telemetry.py` | MQTT background publisher (paho-mqtt) |
@@ -211,10 +259,18 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `app/(app)/index.tsx` | Device control dashboard (expandable cards) |
 | `lib/api.ts` | Typed API client (fetch wrapper, per-URL auth headers) |
 | `lib/auth.tsx` | AuthContext: central + device JWT management, pairing, expo-secure-store |
-| `lib/ble.ts` | BLE service interface + mock implementation |
+| `lib/ble.ts` | BLE service interface, mock + real implementations |
+| `lib/ble-protocol.ts` | Binary frame codec for BLE GATT (Phase 2) |
+| `lib/ble-session.ts` | AES-128-CCM session encryption + HKDF key derivation (Phase 2) |
+| `lib/transport.tsx` | Hybrid transport provider: BLE ↔ HTTPS switching (Phase 2) |
+| `lib/endpoints.ts` | API endpoint string constants |
+| `lib/usePolling.ts` | Reusable polling hook |
+| `lib/useDeviceCommand.ts` | Transport-switching command hook |
 | `lib/theme.ts` | Colour palette, spacing, typography constants |
 | `constants/config.ts` | API URLs (DEVICE_API_URL, CENTRAL_API_URL) |
 | `components/CommandInput.tsx` | AI-ready command input bar |
+| `components/HttpPairingForm.tsx` | HTTP device pairing form |
+| `components/BlePairingFlow.tsx` | BLE device pairing flow |
 
 ### nomographic (SQL / ArcadeDB Migrations)
 
@@ -230,13 +286,13 @@ Consolidated architecture reference for the nomon robot fleet development agents
 
 ---
 
-## Development Status (Phase 17 Complete)
+## Development Status (BLE Pairing & Hybrid Connectivity Complete)
 
-- **nomopractic**: 222 tests (184 unit + 38 integration), Phases 1–11 complete
-- **nomothetic**: 531 tests, Phases 1–11 + Phases 13–17 complete
-- **nomotactic**: Phase 1 (App Foundation & Auth) complete — auth flow, device dashboard, web landing, device pairing, BLE stubs, command input
+- **nomopractic**: 278 tests, Phases 1–11 + Phase 13 (BLE GATT Server) complete
+- **nomothetic**: 532 tests, Phases 1–11 + Phases 13–18 complete
+- **nomotactic**: Phase 1 (App Foundation & Auth) + Phase 2 (BLE Integration) complete — auth flow, device dashboard, web landing, device pairing, BLE connectivity, hybrid transport, command input.
 - **nomographic**: V1 central (Vehicle) + V1 local (DeviceState) + V2 central (User & OwnsDevice) + V3 central (RefreshToken) schemas complete. Docker Compose with Gremlin Server plugin.
-- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion, calibration, routines, central mode auth, user-facing app, ArcadeDB integration, deploy hardening, security hardening, device-mode auth
+- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion, calibration, routines, central mode auth, user-facing app, ArcadeDB integration, deploy hardening, security hardening, device-mode auth, BLE GATT server, BLE pairing coordination, BLE client integration
 - Target platform: Raspberry Pi Zero 2W, Debian trixie (aarch64)
 - Dev/CI platform: x86_64 Linux (cross-compile via `cross`)
 
