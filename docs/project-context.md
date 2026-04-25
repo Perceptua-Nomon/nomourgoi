@@ -86,18 +86,30 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | LED | 26 | Output | Status LED |
 | SpeakerEn | 20 | Output | HifiBerry amp enable |
 
-### BLE GATT UUIDs (Phase 13)
+### BLE GATT UUIDs (Phase 13.1)
 
 All vendor-specific 128-bit UUIDs use base `e3a1XXXX-7b2a-4b9c-8f5a-2b7d6e4f1a3c`.
 
-| Service | UUID |
-|---------|------|
-| nomon Pairing | `e3a10001-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-| nomon Command | `e3a10002-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-| nomon WiFi Provisioning | `e3a10003-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-| nomon Status | `e3a10004-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
+**Simplified (ADR-004):** Single service with 2 characteristics replaces the
+original 4-service layout. OS-level passkey pairing replaces custom pairing.
+NDJSON relay replaces binary protocol.
 
-See nomopractic ADR-002 for the full GATT characteristic table and binary protocol.
+| Service / Characteristic | UUID | Notes |
+|--------------------------|------|-------|
+| nomon Service | `e3a10001-7b2a-4b9c-8f5a-2b7d6e4f1a3c` | Single service (was Pairing Service) |
+| Command Write | `e3a12001-7b2a-4b9c-8f5a-2b7d6e4f1a3c` | Write — client sends NDJSON request chunks |
+| Response Notify | `e3a12002-7b2a-4b9c-8f5a-2b7d6e4f1a3c` | Notify — server sends NDJSON response chunks |
+
+**Retired UUIDs** (Phase 13, superseded by ADR-004):
+
+| Service | UUID | Status |
+|---------|------|--------|
+| nomon Pairing | `e3a10001-…` | UUID reused as nomon Service |
+| nomon Command | `e3a10002-…` | Removed (merged into nomon Service) |
+| nomon WiFi Provisioning | `e3a10003-…` | Removed (WiFi via IPC methods) |
+| nomon Status | `e3a10004-…` | Removed |
+
+See nomopractic ADR-004 for the full GATT simplification rationale.
 
 ### PicarX Motor Defaults
 
@@ -146,7 +158,7 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `NO_ECHO` | Ultrasonic measurement outside valid range (2–400 cm) |
 | `INTERNAL_ERROR` | Unexpected Rust error |
 
-### IPC Methods (35 methods — Phases 1–11)
+### IPC Methods (39 methods — Phases 1–13.1)
 
 | Method | Direction | Purpose |
 |--------|-----------|---------|
@@ -185,6 +197,10 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `start_routine` | write | Start a named autonomous routine |
 | `stop_routine` | write | Stop active routine, return telemetry stats |
 | `get_routine_status` | read | Query routine engine state |
+| `wifi_scan` | read | Scan available WiFi networks via nmcli |
+| `wifi_connect` | write | Connect to a WiFi network with SSID and password |
+| `wifi_status` | read | Query current WiFi connection state |
+| `authenticate` | read | Issue JWT for HTTPS auth (transport-agnostic) |
 
 **Authoritative schema doc:** `nomothetic/docs/hat_ipc_schema.md`
 
@@ -211,12 +227,10 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `src/hat/battery.rs` | Battery voltage via ADC A4 |
 | `src/hat/gpio.rs` | Named GPIO pins — `GpioPin` enum, `GpioBus` trait |
 | `src/hat/ultrasonic.rs` | HC-SR04 distance sensor (TRIG/ECHO GPIO timing) |
-| `src/ble/mod.rs` | BLE GATT server lifecycle, advertising (behind `ble` feature) |
-| `src/ble/protocol.rs` | Binary frame codec (opcode/seq/length/payload) |
-| `src/ble/services.rs` | GATT service + characteristic registration |
-| `src/ble/session.rs` | Pairing, HKDF key derivation, AES-CCM encryption |
-| `src/ble/bridge.rs` | BLE binary command → IPC handler dispatch |
-| `src/ble/wifi.rs` | WiFi provisioning: nmcli scan/connect/status |
+| `src/ble/mod.rs` | BLE GATT server lifecycle, BlueZ passkey agent, advertising (behind `ble` feature) |
+| `src/ble/services.rs` | Single GATT service + 2 characteristics (Command Write, Response Notify) |
+| `src/ble/bridge.rs` | NDJSON relay: accumulate chunks → Handler::dispatch() → chunk response |
+| `src/wifi.rs` | WiFi control: nmcli scan/connect/status (WifiControl trait, always compiled) |
 | `src/reset.rs` | MCU reset (assert BCM5 low ≥ 10 ms) |
 | `src/calibration.rs` | CalibrationStore: motor/servo/grayscale calibration |
 | `src/testing.rs` | Shared test mocks: MockI2c, MockGpio, MockAlsaControl (`#[cfg(test)]`) |
@@ -259,10 +273,8 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `app/(app)/index.tsx` | Device control dashboard (expandable cards) |
 | `lib/api.ts` | Typed API client (fetch wrapper, per-URL auth headers) |
 | `lib/auth.tsx` | AuthContext: central + device JWT management, pairing, expo-secure-store |
-| `lib/ble.ts` | BLE service interface, mock + real implementations |
-| `lib/ble-protocol.ts` | Binary frame codec for BLE GATT (Phase 2) |
-| `lib/ble-session.ts` | AES-128-CCM session encryption + HKDF key derivation (Phase 2) |
-| `lib/transport.tsx` | Hybrid transport provider: BLE ↔ HTTPS switching (Phase 2) |
+| `lib/ble.ts` | BLE service: OS passkey pairing, NDJSON relay, WiFi provisioning |
+| `lib/transport.tsx` | Hybrid transport provider: BLE ↔ HTTPS switching |
 | `lib/endpoints.ts` | API endpoint string constants |
 | `lib/usePolling.ts` | Reusable polling hook |
 | `lib/useDeviceCommand.ts` | Transport-switching command hook |

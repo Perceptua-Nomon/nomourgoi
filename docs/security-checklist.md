@@ -100,34 +100,37 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 
 | # | Check | Severity if violated |
 |---|-------|----------------------|
-| B1 | BLE pairing secret verified with constant-time compare (`hmac.compare_digest` equivalent in Rust) | HIGH — timing side-channel leaks secret |
-| B2 | BLE pairing secret is single-use (consumed after first successful pairing) | HIGH — replay attack |
-| B3 | BLE session key derived via HKDF-SHA256 (not raw pairing secret) | HIGH — weak key derivation |
-| B4 | All post-pairing BLE commands encrypted with AES-128-CCM | HIGH — command injection / eavesdropping |
-| B5 | AES-CCM nonce uses monotonic counter; server rejects counter ≤ last seen | HIGH — replay attack |
-| B6 | AES-CCM nonce includes direction byte (client→server vs server→client) | MEDIUM — nonce reuse across directions |
+| B1 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~BLE pairing secret verified with constant-time compare (`hmac.compare_digest` equivalent in Rust)~~ | HIGH — timing side-channel leaks secret |
+| B2 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~BLE pairing secret is single-use (consumed after first successful pairing)~~ | HIGH — replay attack |
+| B3 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~BLE session key derived via HKDF-SHA256 (not raw pairing secret)~~ | HIGH — weak key derivation |
+| B4 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~All post-pairing BLE commands encrypted with AES-128-CCM~~ | HIGH — command injection / eavesdropping |
+| B5 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~AES-CCM nonce uses monotonic counter; server rejects counter ≤ last seen~~ | HIGH — replay attack |
+| B6 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~AES-CCM nonce includes direction byte (client→server vs server→client)~~ | MEDIUM — nonce reuse across directions |
 | B7 | BLE session state cleared on client disconnect | MEDIUM — stale session key |
 | B8 | JWT issued over BLE uses same `NOMON_JWT_SECRET` as HTTPS (no separate weak secret) | HIGH — token forgery |
 | B9 | JWT issued over BLE uses `iss: "nomon-device"` (not `nomon-central`) | HIGH — cross-mode token reuse |
 | B10 | Shared pairing secret file (`/var/lib/nomon/pairing_secret`) has mode `0640`, owner `root:nomon` | HIGH — unauthorized secret read |
+| B13 | `encrypt_authenticated_write: true` is set on the GATT Command Write characteristic | HIGH — unauthenticated writes accepted |
+| B14 | BLE bridge NDJSON buffer overflow protection is active (max 8 KB per line) | MEDIUM — memory exhaustion |
+| B15 | Passkey file at `pairing_secret_path` has mode `0600` and is owned by the daemon user | HIGH — unauthorized secret read |
 
 ### BLE Input Validation
 
 | # | Check | Severity if violated |
 |---|-------|----------------------|
-| B11 | BLE binary frame length validated against opcode's expected payload size | HIGH — buffer over-read |
-| B12 | BLE opcode validated before dispatch (unknown opcode → error response, not panic) | HIGH — daemon crash |
-| B13 | BLE motor/servo/sensor parameters validated identically to IPC params (same handler) | HIGH — out-of-range hardware write |
-| B14 | BLE advertising name length ≤ 29 bytes (BLE spec limit) | LOW — advertising failure |
+| B11 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~BLE binary frame length validated against opcode's expected payload size~~ | HIGH — buffer over-read |
+| B12 | [SUPERSEDED by ADR-004 — OS link-layer AES-CCM replaces application-layer crypto] ~~BLE opcode validated before dispatch (unknown opcode → error response, not panic)~~ | HIGH — daemon crash |
+| B16 | BLE motor/servo/sensor parameters validated identically to IPC params (same handler) | HIGH — out-of-range hardware write |
+| B17 | BLE advertising name length ≤ 29 bytes (BLE spec limit) | LOW — advertising failure |
 
 ### BLE Transport
 
 | # | Check | Severity if violated |
 |---|-------|----------------------|
-| B15 | BLE GATT server does not expose hardware commands without prior pairing (pre-auth characteristics limited to health/status) | HIGH — unauthorized motor control |
-| B16 | WiFi password written over BLE is not logged or persisted beyond `nmcli` | HIGH — credential leak |
-| B17 | BLE disconnect triggers motor/servo lease cleanup (same as IPC disconnect) | HIGH — unsafe actuator state |
-| B18 | `react-native-ble-plx` permissions requested at runtime (Android 12+ Bluetooth permissions) | MEDIUM — app crash or silent failure |
+| B18 | BLE GATT server does not expose hardware commands without prior pairing (pre-auth characteristics limited to health/status) | HIGH — unauthorized motor control |
+| B19 | WiFi password written over BLE is not logged or persisted beyond `nmcli` | HIGH — credential leak |
+| B20 | BLE disconnect triggers motor/servo lease cleanup (same as IPC disconnect) | HIGH — unsafe actuator state |
+| B21 | `react-native-ble-plx` permissions requested at runtime (Android 12+ Bluetooth permissions) | MEDIUM — app crash or silent failure |
 
 ---
 
