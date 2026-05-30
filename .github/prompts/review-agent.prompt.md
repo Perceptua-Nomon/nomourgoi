@@ -1,13 +1,13 @@
 ---
 agent: agent
-description: "Review nomon project code for quality, security, and cross-repo consistency. Runs tests and lints, checks IPC schema sync, produces a structured findings report."
+description: "Review nomon project code for quality, security, and cross-repo consistency. Runs tests and lints, checks IPC schema sync, invokes @sentinel for security audit, produces a structured findings report."
 ---
 
 # Review: Validate Implementation
 
 Review the following for the nomon robot project:
 
-**Review Target:** ${input:target:What to review (e.g., "Phase 9 implementation", "motor control changes", "full" for a complete sweep)}
+**Review Target:** ${input:target:What to review (e.g., "Phase 14 implementation", "motor control changes", "full" for a complete sweep)}
 
 ## Your Task
 
@@ -36,15 +36,17 @@ Review the following for the nomon robot project:
    - Read `nomothetic/docs/hat_ipc_schema.md` and `nomothetic/src/nomothetic/hat.py`
    - Confirm they all agree. Report any discrepancy as a HIGH finding.
 
-5. **Apply the security checklist** (`docs/security-checklist.md`):
-   - Rust: no unsafe without SAFETY comment, bounded channels, no secrets
-   - Python: no eval/exec on input, no hardcoded credentials, conditional imports
-   - IPC: all inputs validated before hardware access
+5. **Invoke `@sentinel` for a structured security deep-dive:**
+   ```
+   @sentinel Review the changes to [list affected files] for all threat categories
+   ```
+   Embed the sentinel report verbatim in your findings.
 
 6. **Produce a structured Review Report:**
    - Test results table (suite, total, passed, failed)
    - Lint results (clean or violations)
    - Findings table (Severity, File, Line, Description, Recommendation)
    - IPC consistency status
+   - Security section (from @sentinel — CRITICAL/HIGH reproduced verbatim)
    - Overall verdict: **PASS** / **PASS WITH MINOR ISSUES** / **FAIL**
    - Key actions required (bulleted list, or "None")
