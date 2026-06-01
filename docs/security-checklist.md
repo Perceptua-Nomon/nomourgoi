@@ -92,6 +92,20 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 | P12 | No Pi-specific library imported unconditionally (breaks CI silently) | MEDIUM |
 | P13 | No outdated dependencies with known CVEs | HIGH |
 
+### WiFi Provisioning
+
+| # | Check | Severity if violated |
+|---|-------|----------------------|
+| P22 | SSID rejects null bytes and control characters (`\x00–\x1f`, `\x7f`) | MEDIUM — nmcli robustness / DoS |
+| P23 | SSID rejects leading `-` character | MEDIUM — nmcli argument injection |
+| P24 | `/run/nomothetic/pairing-secret` written with mode `0o600` (owner-read-only) | HIGH — pairing secret world-readable |
+
+### Deployment Guards
+
+| # | Check | Severity if violated |
+|---|-------|----------------------|
+| P25 | `NOMON_DEVICE_AUTH=false` never appears in production systemd units | CRITICAL — disables ALL device endpoint authentication |
+
 ---
 
 ## Cross-Repo
@@ -103,6 +117,26 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 | X3 | Hardware constants (BCM pins, I2C address) agree between repos | HIGH — wrong hardware write |
 | X4 | `hat_ipc_schema.md` reflects the current implementation | MEDIUM — misleads developers |
 | X5 | Integration tests cover round-trip: Python call → IPC → Rust → response | HIGH — schema drift undetected |
+
+### Token Storage (nomotactic)
+
+| # | Check | Severity if violated |
+|---|-------|----------------------|
+| X6 | Access tokens held in React state only on web (never written to any browser storage) | HIGH — XSS exfiltration |
+| X7 | Refresh tokens use `sessionStorage` on web (not `localStorage`; cleared on tab close) | MEDIUM — persistent token after session end |
+| X8 | Mobile tokens stored in `expo-secure-store` (OS keychain), not AsyncStorage | HIGH — plaintext token on device storage |
+
+---
+
+## Fleet & Registration
+
+> These items apply to the central-mode nomothetic service and the fleet management API.
+
+| # | Check | Severity if violated |
+|---|-------|----------------------|
+| FL1 | **Registration proof lacks cryptographic signature verification.** The device VIN proof JWT signature is NOT verified by the central server (device and central use separate secrets). An authenticated central user can forge a proof claiming any VIN. **Planned mitigation**: asymmetric per-device EC certificates. Until then, rely on trust between central-authenticated users. | MEDIUM — multi-tenant VIN squatting |
+| FL2 | Fleet API update endpoints whitelist property keys against the device model schema | HIGH — arbitrary property injection into ArcadeDB |
+| FL3 | Device-to-central registration requires a valid central-issued JWT (not just structural proof) | HIGH — unauthenticated device registration |
 
 ---
 
@@ -137,6 +171,12 @@ grep -rn "password\s*=\s*['\"].\|api_key\s*=\s*['\"].\|token\s*=\s*['\"]." nomot
 
 # Check for eval/exec in Python
 grep -rn "eval(\|exec(" nomothetic/src/
+
+# Check pairing secret display file permissions (P24)
+grep -n "0o6" nomothetic/src/nomothetic/api.py | grep -i "secret\|pairing"
+
+# Check NOMON_DEVICE_AUTH is never 'false' in systemd units (P25)
+grep -rn "NOMON_DEVICE_AUTH=false" nomothetic/systemd/
 
 # Rust security audit
 cd nomopractic && cargo audit
