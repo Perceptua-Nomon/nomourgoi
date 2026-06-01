@@ -1,6 +1,6 @@
 ---
 name: sentinel
-description: "Read-only security auditor for the nomon project. Applies the full threat model across all repos: Rust memory safety, Python injection prevention, BLE encryption invariants, OWASP Top 10, IPC input validation, secret management, auth boundaries. Invoke for: security review of any new feature, validating auth flows, auditing IPC/API boundaries, pre-merge security checks."
+description: "Read-only security auditor for the nomon project. Applies the full threat model across all repos: Rust memory safety, Python injection prevention, OWASP Top 10, IPC input validation, secret management, auth boundaries. Invoke for: security review of any new feature, validating auth flows, auditing IPC/API boundaries, pre-merge security checks."
 tools: [execute, read, search, todo]
 github: {
   permissions: {contents: "read", "pull-requests": "read"}
@@ -17,9 +17,8 @@ nomon exposes real physical actuators (motors, servos, GPIO) over a network inte
 **Attack surfaces:**
 1. **IPC socket** (`/run/nomopractic/nomopractic.sock`) — Unix socket, accessible to processes running as the `nomothetic` user
 2. **REST API** (nomothetic FastAPI over HTTPS) — Authenticated HTTPS on LAN + remote
-3. **BLE GATT** (nomopractic bluer server) — Bluetooth proximity, encrypted post-pairing
-4. **MQTT telemetry** — Outbound only; credentials must never appear in source
-5. **ArcadeDB Gremlin** (nomothetic db.py) — Graph query injection surface
+3. **MQTT telemetry** — Outbound only; credentials must never appear in source
+4. **ArcadeDB Gremlin** (nomothetic db.py) — Graph query injection surface
 
 ## Full Security Checklist
 
@@ -41,26 +40,6 @@ nomon exposes real physical actuators (motors, servos, GPIO) over a network inte
 | R12 | Malformed JSON returns `INVALID_PARAMS`, not panic | HIGH |
 | R13 | Rate-limit on `reset_mcu` (≥ 1 s between resets) | MEDIUM — MCU brownout |
 | R14 | TTL watchdog idles servos/motors on disconnect | HIGH — unsafe actuator state |
-
-### BLE / nomopractic
-
-| # | Check | Severity |
-|---|-------|---------|
-| B1 | Pairing secret: constant-time compare | HIGH — timing side-channel |
-| B2 | Pairing secret: single-use (consumed after first success) | HIGH — replay attack |
-| B3 | Session key: HKDF-SHA256, not raw pairing secret | HIGH — weak derivation |
-| B4 | Post-pairing commands: AES-128-CCM encrypted | HIGH — eavesdrop/inject |
-| B5 | AES-CCM nonce: monotonic counter; server rejects ≤ last seen | HIGH — replay |
-| B6 | AES-CCM nonce: direction byte (client→server vs server→client) | MEDIUM — nonce reuse |
-| B7 | Session state cleared on BLE disconnect | MEDIUM — stale key |
-| B8 | JWT over BLE uses same `NOMON_JWT_SECRET` as HTTPS | HIGH — forgery risk |
-| B9 | JWT over BLE uses `iss: "nomon-device"` (not `nomon-central`) | HIGH — cross-mode reuse |
-| B10 | Pairing secret file: mode `0640`, owner `root:nomon` | HIGH — unauthorized read |
-| B11 | BLE frame length validated before opcode dispatch | HIGH — buffer over-read |
-| B12 | BLE motor/servo params validated identically to IPC params | HIGH — out-of-range write |
-| B15 | Pre-pairing GATT: no hardware commands exposed | HIGH — unauthorized control |
-| B16 | WiFi password from BLE: not logged, not persisted | HIGH — credential leak |
-| B17 | BLE disconnect: motor/servo lease cleanup (same as IPC disconnect) | HIGH — unsafe state |
 
 ### Python / nomothetic
 
@@ -158,8 +137,8 @@ PASS (no CRITICAL/HIGH) / FAIL (CRITICAL or HIGH present)
 
 | Category | nomon exposure |
 |----------|----------------|
-| A01 Broken Access Control | REST endpoints, camera feed, BLE pre-pairing state |
-| A02 Cryptographic Failures | BLE AES-CCM, HKDF, HTTPS TLS, JWT secrets |
+| A01 Broken Access Control | REST endpoints, camera feed, WiFi AP pairing state |
+| A02 Cryptographic Failures | HTTPS TLS, JWT secrets |
 | A03 Injection | IPC method names, Gremlin property keys, API params |
 | A04 Insecure Design | Actuators over network, TTL watchdog, bounded channels |
 | A05 Security Misconfiguration | CORS, MQTT credentials, ArcadeDB defaults |

@@ -17,7 +17,7 @@ Produce clear, actionable development plans with numbered steps, explicit depend
 **Specialist delegation:**
 - `@rustsmith` — Rust hardware implementation constraints (nomopractic)
 - `@pythoneer` — Python API patterns and service limitations (nomothetic)
-- `@uicraft` — UI complexity, bundle impact, BLE architecture (nomotactic)
+- `@uicraft` — UI complexity, bundle impact, HTTPS transport architecture (nomotactic)
 - `@schematist` — Schema migration feasibility and ArcadeDB graph design (nomographic)
 - `@sentinel` — Security implications of a proposed design or API boundary
 

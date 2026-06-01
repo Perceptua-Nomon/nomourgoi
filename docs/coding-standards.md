@@ -195,7 +195,7 @@ Test code confirms the guard works on non-Pi by running without the library inst
 ### Secrets and Configuration
 
 - NO hardcoded passwords, API keys, tokens, or certificate paths in source
-- Use environment variables or config files in `.gitignore`
+- Use environment variables loaded from mode-specific gitignored env files (`.env.device` / `.env.central` / `.env.local`)
 - TLS certificates: paths from config, not embedded strings
 
 ### Testing
