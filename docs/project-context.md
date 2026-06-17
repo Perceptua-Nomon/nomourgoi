@@ -43,9 +43,9 @@ Consolidated architecture reference for the nomon robot fleet development agents
 │   │ ArcadeDB (central)│         ┌──────────────────────────────────┐   │
 │   │ User, Vehicle,    │         │ nomopractic (Rust daemon on Pi)  │   │
 │   │ Telemetry         │         │ Servo, Motor, ADC, GPIO,         │   │
-│   └──────────────────┘         │ Ultrasonic, Speaker, BLE GATT   │   │
+│   └──────────────────┘         │ Ultrasonic, Speaker   │   │
 │                                 └─────────────┬───────────────────┘   │
-│                                                │ rppal I2C + bluer BLE│
+│                                                │ rppal I2C│
 │                                                ▼                       │
 │                                 ┌──────────────────────────────────┐   │
 │                                 │ SunFounder Robot HAT V4          │   │
@@ -85,19 +85,6 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | SW | 19 | Input  | User button |
 | LED | 26 | Output | Status LED |
 | SpeakerEn | 20 | Output | HifiBerry amp enable |
-
-### BLE GATT UUIDs (Phase 13)
-
-All vendor-specific 128-bit UUIDs use base `e3a1XXXX-7b2a-4b9c-8f5a-2b7d6e4f1a3c`.
-
-| Service | UUID |
-|---------|------|
-| nomon Pairing | `e3a10001-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-| nomon Command | `e3a10002-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-| nomon WiFi Provisioning | `e3a10003-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-| nomon Status | `e3a10004-7b2a-4b9c-8f5a-2b7d6e4f1a3c` |
-
-See nomopractic ADR-002 for the full GATT characteristic table and binary protocol.
 
 ### PicarX Motor Defaults
 
@@ -211,12 +198,6 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `src/hat/battery.rs` | Battery voltage via ADC A4 |
 | `src/hat/gpio.rs` | Named GPIO pins — `GpioPin` enum, `GpioBus` trait |
 | `src/hat/ultrasonic.rs` | HC-SR04 distance sensor (TRIG/ECHO GPIO timing) |
-| `src/ble/mod.rs` | BLE GATT server lifecycle, advertising (behind `ble` feature) |
-| `src/ble/protocol.rs` | Binary frame codec (opcode/seq/length/payload) |
-| `src/ble/services.rs` | GATT service + characteristic registration |
-| `src/ble/session.rs` | Pairing, HKDF key derivation, AES-CCM encryption |
-| `src/ble/bridge.rs` | BLE binary command → IPC handler dispatch |
-| `src/ble/wifi.rs` | WiFi provisioning: nmcli scan/connect/status |
 | `src/reset.rs` | MCU reset (assert BCM5 low ≥ 10 ms) |
 | `src/calibration.rs` | CalibrationStore: motor/servo/grayscale calibration |
 | `src/testing.rs` | Shared test mocks: MockI2c, MockGpio, MockAlsaControl (`#[cfg(test)]`) |
@@ -231,17 +212,16 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `nomothetic/mode.py` | API mode enum (`device` / `central`) and config-driven selection |
 | `nomothetic/auth.py` | JWT auth: token issuance, validation, password hashing (central + device modes) |
 | `nomothetic/auth_routes.py` | `/api/auth/*` endpoints (register, login, refresh, logout, profile) — central mode |
-| `nomothetic/device_auth_routes.py` | `/api/device/auth/*` endpoints (pairing, refresh, profile) — device mode |
+| `nomothetic/device_auth_routes.py` | `/api/device/auth/*` endpoints (pairing, refresh, profile, identity) — device mode |
 | `nomothetic/pairing.py` | Device pairing secret lifecycle (generate, verify, consume) |
-| `nomothetic/fleet.py` | Fleet data: ArcadeDB queries for device management (central mode) |
-| `nomothetic/fleet_routes.py` | `/api/fleet/*` endpoints (device CRUD) — central mode |
+| `nomothetic/fleet_routes.py` | `/api/fleet/*` endpoints (device CRUD + registration proof validation) — central mode |
 | `nomothetic/rate_limit.py` | Sliding-window rate limiting for auth and pairing endpoints |
 | `nomothetic/db.py` | ArcadeDB HTTP API client with Gremlin query support |
 | `nomothetic/user_store.py` | User persistence (Protocol + InMemory + Gremlin backends) |
 | `nomothetic/fleet_store.py` | Fleet device persistence (Protocol + InMemory + Gremlin backends) |
 | `nomothetic/token_store.py` | Refresh token persistence (Protocol + InMemory + Gremlin backends) |
-| `nomothetic/gremlin_utils.py` | Shared Gremlin value sanitiser |
-| `nomothetic/db_utils.py` | Shared database query utilities |
+| `nomothetic/device_jwt.py` | Device JWT secret persistence (`DeviceJwtSecretStore`, atomic 0600 write) |
+| `nomothetic/db_utils.py` | Shared database query utilities and Gremlin value sanitiser |
 | `nomothetic/camera.py` | OV5647 capture via picamera2 |
 | `nomothetic/streaming.py` | MJPEG Flask server for local LAN streaming |
 | `nomothetic/telemetry.py` | MQTT background publisher (paho-mqtt) |
@@ -259,18 +239,29 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 | `app/(app)/index.tsx` | Device control dashboard (expandable cards) |
 | `lib/api.ts` | Typed API client (fetch wrapper, per-URL auth headers) |
 | `lib/auth.tsx` | AuthContext: central + device JWT management, pairing, expo-secure-store |
-| `lib/ble.ts` | BLE service interface, mock + real implementations |
-| `lib/ble-protocol.ts` | Binary frame codec for BLE GATT (Phase 2) |
-| `lib/ble-session.ts` | AES-128-CCM session encryption + HKDF key derivation (Phase 2) |
-| `lib/transport.tsx` | Hybrid transport provider: BLE ↔ HTTPS switching (Phase 2) |
+| `lib/transport.tsx` | HTTPS transport provider |
 | `lib/endpoints.ts` | API endpoint string constants |
 | `lib/usePolling.ts` | Reusable polling hook |
 | `lib/useDeviceCommand.ts` | Transport-switching command hook |
 | `lib/theme.ts` | Colour palette, spacing, typography constants |
 | `constants/config.ts` | API URLs (DEVICE_API_URL, CENTRAL_API_URL) |
 | `components/CommandInput.tsx` | AI-ready command input bar |
-| `components/HttpPairingForm.tsx` | HTTP device pairing form |
-| `components/BlePairingFlow.tsx` | BLE device pairing flow |
+| `components/HttpPairingForm.tsx` | HTTP device pairing form (Soft AP pairing flow) |
+| `components/WifiProvisionForm.tsx` | Wi-Fi credential form (rendered inline after successful pairing) |
+| `components/DeviceRegistrationForm.tsx` | Central fleet registration; discovery-driven flow (direct/ap/needs-pairing) |
+| `components/ExpandableCard.tsx` | Expandable dashboard card base component |
+| `components/StatusCard.tsx` | Device status card |
+| `components/ControlPad.tsx` | Directional control pad |
+| `components/MotorCard.tsx` | Motor speed / direction controls |
+| `components/PanTiltPad.tsx` | Camera pan/tilt 2D pad |
+| `components/CameraCard.tsx` | Live camera feed card |
+| `components/RoutineCard.tsx` | Autonomous routine start/stop card |
+| `components/SensorCard.tsx` | Sensor readings card |
+| `components/SensorBar.tsx` | Horizontal sensor bar gauge |
+| `components/VideoFeed.tsx` | MJPEG video feed component |
+| `components/ConnectionIndicator.tsx` | Connection status indicator |
+| `lib/devices.ts` | Central fleet device list utilities |
+| `lib/local-devices.ts` | Local (Soft-AP-paired) device registry |
 
 ### nomographic (SQL / ArcadeDB Migrations)
 
@@ -286,13 +277,13 @@ See nomopractic ADR-002 for the full GATT characteristic table and binary protoc
 
 ---
 
-## Development Status (BLE Pairing & Hybrid Connectivity Complete)
+## Development Status (Device Fleet Registration Complete)
 
-- **nomopractic**: 278 tests, Phases 1–11 + Phase 13 (BLE GATT Server) complete
-- **nomothetic**: 532 tests, Phases 1–11 + Phases 13–18 complete
-- **nomotactic**: Phase 1 (App Foundation & Auth) + Phase 2 (BLE Integration) complete — auth flow, device dashboard, web landing, device pairing, BLE connectivity, hybrid transport, command input.
-- **nomographic**: V1 central (Vehicle) + V1 local (DeviceState) + V2 central (User & OwnsDevice) + V3 central (RefreshToken) schemas complete. Docker Compose with Gremlin Server plugin.
-- Phases complete: GPIO, ADC/battery, servo, motor, CI/CD, Python client, audio, peripheral expansion, calibration, routines, central mode auth, user-facing app, ArcadeDB integration, deploy hardening, security hardening, device-mode auth, BLE GATT server, BLE pairing coordination, BLE client integration
+- **nomopractic**: 239 tests, Phases 1–11, 14–15 complete (Phase 12 planned, Phases 13/13.1 superseded by Phase 15)
+- **nomothetic**: 591 tests, Phases 1–11, 13–23 complete (Phase 12 planned, Phases 18/18.1 superseded by Phase 20)
+- **nomotactic**: Phases 1.1–1.6, 8, 15 complete — auth flow, device dashboard, web landing, Wi-Fi AP pairing, fleet device registration. BLE phases (1.5, 2, 2.1, 2.2) superseded by Phase 15.
+- **nomographic**: Phases 1–7 complete. V3 central (User, Vehicle, RefreshToken) + V1 local (DeviceState) schemas.
+- Latest completed work: device fleet registration & identity (nomothetic Phase 23 / nomotactic Phase 8); network provisioning security hardening (SSID control-char/leading-dash validation, pairing secret file permissions 0o600, registration proof FL1 warning)
 - Target platform: Raspberry Pi Zero 2W, Debian trixie (aarch64)
 - Dev/CI platform: x86_64 Linux (cross-compile via `cross`)
 

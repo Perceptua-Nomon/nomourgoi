@@ -1,13 +1,17 @@
 ---
 agent: agent
-description: "End-to-end phase execution: design → build → review loop. Handles both new phases (design from scratch) and planned phases (consistency check). Iterates until review passes."
+description: "End-to-end phase execution: design → build → review loop. Handles both new phases (design from scratch) and planned phases (consistency check). Iterates until review passes. Prefer the `iterate` skill for fully automated orchestration."
 ---
 
 # Phase Build: Design → Build → Review
 
-Execute a complete phase for the nomon robot project.
+> **Prefer the iterate skill:** For fully automated orchestration of this loop, invoke the `iterate` skill instead:
+> ```
+> invoke the iterate skill
+> ```
+> Use this prompt when you want to manually step through or customise the loop.
 
-**Phase:** ${input:phase:Phase name or description (e.g., "Phase 10: Calibration & Configuration" or "add OTA firmware updates")}
+**Phase:** ${input:phase:Phase name or description (e.g., "Phase 14: Encoder feedback" or "add OTA firmware updates")}
 
 ---
 
