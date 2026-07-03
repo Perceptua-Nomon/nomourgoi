@@ -11,7 +11,8 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 1. **IPC socket** (`/run/nomopractic/nomopractic.sock`) — local Unix socket, accessible to any process running as the `nomothetic` service user
 2. **REST API** (nomothetic FastAPI over HTTPS) — HTTPS on LAN + remote; authenticated
 3. **MQTT telemetry** — outbound only; credentials must stay out of source
-4. **Camera/audio streaming** — MJPEG and audio data; access control delegated to API layer
+4. **Camera/audio streaming** — MJPEG and audio data; stream start/stop is JWT-gated via the API, and the MJPEG server itself (plain HTTP, outside the API) requires a per-run `?token=` access token minted by `/api/stream/start`
+5. **Plugin auth** (`/api/plugin/*`) — Ed25519 challenge-response bootstrap for on-device autonomy plugins (autonomon); key registration is localhost-only, nonces are single-use and TTL-bounded (nomothetic ADR-019)
 
 ---
 
@@ -76,7 +77,7 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 | # | Check | Severity if violated |
 |---|-------|----------------------|
 | P9 | REST API uses HTTPS (no plaintext HTTP endpoints) | HIGH |
-| P10 | Camera and streaming endpoints are authenticated | HIGH |
+| P10 | Camera and streaming endpoints are authenticated; the MJPEG stream server (outside the JWT'd API) enforces its per-run `?token=` on `/` and `/stream` | HIGH |
 | P11 | CORS policy is restrictive, not `allow_origins=["*"]` on authenticated routes | MEDIUM |
 | P16 | Server-side logout endpoint revokes refresh tokens | MEDIUM — token persists after logout |
 | P17 | Device-mode startup warns if Tailscale not detected | LOW — silent misconfiguration |
@@ -105,6 +106,19 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 | # | Check | Severity if violated |
 |---|-------|----------------------|
 | P25 | `NOMON_DEVICE_AUTH=false` never appears in production systemd units | CRITICAL — disables ALL device endpoint authentication |
+
+---
+
+## Python (autonomon)
+
+| # | Check | Severity if violated |
+|---|-------|----------------------|
+| A1 | Plugin Ed25519 private key written `0600`, owned by the service user, atomic write | HIGH — key theft yields device JWTs |
+| A2 | Device JWT lives in memory only; never written to disk or logged | HIGH — token exfiltration |
+| A3 | NDJSON lifecycle events and stderr logs never carry credentials | HIGH — secrets land in the nomothetic journal |
+| A4 | `/etc/autonomon/autonomon.env` contains no secrets (key *path* only) | MEDIUM — file is world-readable by design |
+| A5 | All device I/O via the nomothetic REST API — no direct I2C/GPIO (ADR-004) | MEDIUM — bypasses gateway validation |
+| A6 | `httpx` `verify=False` is limited to device connections (self-signed certs, nomothetic ADR-001) — never to central/public hosts | HIGH — MITM on real TLS endpoints |
 
 ---
 
@@ -161,10 +175,10 @@ nomon robots expose hardware actuators and sensors to remote callers. The primar
 
 ```bash
 # Check for unwrap in production Rust (should return zero results outside #[cfg(test)])
-rg -n "\.unwrap\(\)|\.expect\(" nomopractic/src/ --include="*.rs" | grep -v "#\[cfg(test)\]"
+rg -n "\.unwrap\(\)|\.expect\(" nomopractic/src/ -g "*.rs" | grep -v "#\[cfg(test)\]"
 
 # Check for unsafe blocks in Rust
-rg -n "unsafe" nomopractic/src/ --include="*.rs"
+rg -n "unsafe" nomopractic/src/ -g "*.rs"
 
 # Check for hardcoded secrets in Python
 grep -rn "password\s*=\s*['\"].\|api_key\s*=\s*['\"].\|token\s*=\s*['\"]." nomothetic/src/

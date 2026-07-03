@@ -6,7 +6,7 @@ Consolidated architecture reference for the nomon robot fleet development agents
 
 ## System Overview
 
-**nomon** is a fleet of intelligent, semi-autonomous robots providing utility to working- and middle-class people. The system is split across five integrated repositories:
+**nomon** is a fleet of intelligent, semi-autonomous robots providing utility to working- and middle-class people. The system is split across six integrated repositories:
 
 | Repository | Language | Role |
 |------------|----------|------|
@@ -14,7 +14,10 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | **nomothetic** | Python | Fleet API package: REST, camera, telemetry, HAT client. Runs in device mode (on Pi) or central mode (fleet server). |
 | **nomotactic** | TypeScript | User-facing Expo (React Native) app: Android, iOS, and web from a single codebase. |
 | **nomographic** | SQL | ArcadeDB graph database schemas and ArcadeDB-native migrations. Central (fleet-wide) and local (per-device) instances. |
+| **autonomon** | Python | The brain: four-layer cognitive pipeline (Perception → World Model → Planning → Action) driving a device through the nomothetic REST API. Standalone venv; never imported by nomothetic (autonomon ADR-004/005). |
 | **nomourgoi** | Markdown | Development infrastructure: agents, prompts, shared standards. |
+
+**Boundary rules:** all hardware register knowledge lives *below* nomothetic (in nomopractic); all perception processing, modeling, and planning lives *above* it (in autonomon). nomothetic is a thin raw-I/O gateway between them. autonomon publishes its routine catalogue to a shared file (`/var/lib/nomon/routine_catalog.json`, override `NOMON_ROUTINE_CATALOG_PATH`) at deploy time; nomothetic reads that file to list and launch routines — the two never import each other.
 
 ---
 
@@ -275,6 +278,21 @@ Consolidated architecture reference for the nomon robot fleet development agents
 | `scripts/lib/migrate-common.sh` | Shared lineage tracking library (MetaType vertices + Supersedes edges) |
 | *Auto-generated* | `{Type}Meta` vertices and `Supersedes` edges created by post-migration lineage hook |
 
+### autonomon (Python — autonomy)
+
+| Path | Purpose |
+|------|---------|
+| `src/autonomon/messages.py` | `PerceptionEvent` / `WorldStateUpdate` / `ActionPlan` / `ActionResult` dataclasses |
+| `src/autonomon/pipeline.py` | `Pipeline` — wires the four layers with typed, bounded asyncio queues |
+| `src/autonomon/slot.py` | `LayerSlot` / `SlotState` — owns one layer's asyncio task + queues |
+| `src/autonomon/fan_in.py` | `FanInSlot` — multi-source perception fan-in |
+| `src/autonomon/plugin_auth.py` | Ed25519 challenge-response device-JWT auth (nomothetic ADR-019); key never leaves disk, JWT never touches it |
+| `src/autonomon/perception/` | `PerceptionBase`, `Perceptron` (sensor polling), vision detectors (`yolo-onnx` / `opencv-dnn` / `opencv-hog` / `fake`) |
+| `src/autonomon/world_model/` | `ObstacleWorldModel`, `TargetWorldModel` |
+| `src/autonomon/planning/` | `AvoidancePlanner`, `FollowPlanner` (`PursuitPlanner` retained but superseded) |
+| `src/autonomon/action/` | `VehicleAction` — drive/steer/pan/tilt via the nomothetic REST API |
+| `src/autonomon/routines/` | Registry, `explore` / `follow-user` factories, `nomon-autonomon` CLI, catalogue publish, status reporting |
+
 ---
 
 ## Development Status (Device Fleet Registration Complete)
@@ -283,6 +301,7 @@ Consolidated architecture reference for the nomon robot fleet development agents
 - **nomothetic**: 591 tests, Phases 1–11, 13–23 complete (Phase 12 planned, Phases 18/18.1 superseded by Phase 20)
 - **nomotactic**: Phases 1.1–1.6, 8, 15 complete — auth flow, device dashboard, web landing, Wi-Fi AP pairing, fleet device registration. BLE phases (1.5, 2, 2.1, 2.2) superseded by Phase 15.
 - **nomographic**: Phases 1–7 complete. V3 central (User, Vehicle, RefreshToken) + V1 local (DeviceState) schemas.
+- **autonomon**: four-layer pipeline framework with `explore` and `follow-user` routines; Ed25519 plugin auth; file-based catalogue handoff to nomothetic (ADR-005). Phases 3/4/7 deferred; 5/6b/6c active — see `autonomon/docs/roadmap.md`.
 - Latest completed work: device fleet registration & identity (nomothetic Phase 23 / nomotactic Phase 8); network provisioning security hardening (SSID control-char/leading-dash validation, pairing secret file permissions 0o600, registration proof FL1 warning)
 - Target platform: Raspberry Pi Zero 2W, Debian trixie (aarch64)
 - Dev/CI platform: x86_64 Linux (cross-compile via `cross`)
@@ -312,6 +331,9 @@ npx expo lint
 # nomographic migration validation
 ./scripts/migrate-central.sh validate
 ./scripts/migrate-local.sh validate
+
+# autonomon check (same Python toolchain as nomothetic)
+make check   # ruff + black + mypy + pytest
 ```
 
 ---
